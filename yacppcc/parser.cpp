@@ -42,12 +42,12 @@ bool precidenceCompare(token a, token b) {
 
 std::shared_ptr<exprtree> parser::parseExpression(std::shared_ptr<exprtree> lhs, size_t minPrecidence) {
     auto lookahead = peek();
-    while(isOp(lookahead.m_type) && precedence[lookahead.m_type] >= minPrecidence) {
+    while(isBinaryOp(lookahead.m_type) && precedence[lookahead.m_type] >= minPrecidence) {
         auto op = lookahead;
         advance();
         auto rhs = parsePrimary();
         lookahead = peek();
-        while(isOp(lookahead.m_type) && precidenceCompare(lookahead, op)) {
+        while(isBinaryOp(lookahead.m_type) && precidenceCompare(lookahead, op)) {
             rhs = parseExpression(rhs, precedence[lookahead.m_type]);
             lookahead = peek();
         }
@@ -62,6 +62,12 @@ std::shared_ptr<exprtree> parser::parseExpression(std::shared_ptr<exprtree> lhs,
     return lhs;
 }
 
+std::shared_ptr<exprtree> parser::parseUrnary(const token &tok) {
+    auto tree = std::make_shared<exprtree>(exprtree(token(tok)));
+    tree->subtrees.push_back(parsePrimary());
+    return tree;
+}
+
 std::shared_ptr<exprtree> parser::parsePrimary() {
     auto tok = advance();
     switch(tok.m_type) {
@@ -73,15 +79,11 @@ std::shared_ptr<exprtree> parser::parsePrimary() {
         advance().expect(type::paren_close);
         return tree;
     }
-    case type::minus:
-    {
-        auto num = advance().expect(type::num);
-        return std::make_shared<exprtree>(
-            exprtree(token(type::num, -num.m_value, "", tok.m_startPos, token::getCombindedLen(tok, num))));
-    }
 
     case type::identifier: return std::make_shared<exprtree>(exprtree(tok));
-    default: throw std::logic_error("Invalid operation");
+    default:
+        if(isUnaryOp(tok.m_type)) return parseUrnary(tok);
+        else throw std::logic_error("Invalid operation");
     }
 }
 
@@ -106,7 +108,6 @@ std::shared_ptr<exprtree> parser::parseStatement() {
 std::shared_ptr<exprtree> parser::parseBlock() {
     auto block = std::make_shared<exprtree>(exprtree(token(type::block, 0, "", peek().m_startPos, -1)));
 
-    // It's up to the parent function to decide weather or not EOF is fine.
     while(peek().m_type != type::curl_bracket_close && peek().m_type != type::eof) {
         auto tree = parseStatement();
         if(tree != nullptr) {
@@ -128,11 +129,8 @@ std::shared_ptr<exprtree> parser::parseVariable() {
     advance().expect(type::colon);
     auto id = parseIdentifier();
     tree->subtrees.push_back(id);
-    if(peek().m_type == type::equals) {
-        tree->subtrees.push_back(parseExpression(id, 0));
-    }
-
-    advance().expect(type::semicolon);
+    if(peek().m_type == type::equals) tree->subtrees.push_back(parseExpression(id, 0));
+    tree->m_tok.m_len = token::getCombindedLen(tree->m_tok, advance().expect(type::semicolon));
     return tree;
 }
 

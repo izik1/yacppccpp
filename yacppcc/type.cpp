@@ -16,6 +16,7 @@ std::unordered_map<type, std::string> typeStringMap{
     {type::keyword_let,  "let"},
     {type::colon,        "colon"},
     {type::semicolon,    "semicolon"},
+    {type::block,        "block"}
 };
 
 std::unordered_map<std::string, type> lexerSymbolMap{

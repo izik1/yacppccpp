@@ -25,7 +25,7 @@ enum class type {
 extern std::unordered_map<type, std::string> typeStringMap;
 extern std::unordered_map<std::string, type> lexerSymbolMap;
 extern std::unordered_map<std::string, type> lexerKeywordMap;
-inline bool isOp(type t) {
+inline bool isBinaryOp(type t) {
     switch(t) {
     case type::plus:
     case type::minus:
@@ -34,6 +34,17 @@ inline bool isOp(type t) {
     case type::slash:
     case type::equals:
         return true;
+    default: return false;
+    }
+}
+
+inline bool isUnaryOp(type t) {
+    switch(t) {
+    case type::plus:
+    case type::minus:
+    case type::carrot:
+        return true;
+
     default: return false;
     }
 }

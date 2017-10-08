@@ -13,6 +13,7 @@ private:
     token peek();
     token advance();
     token current();
+    std::shared_ptr<exprtree> parseUrnary(const token &tok);
     std::shared_ptr<exprtree> parseStatement();
     std::shared_ptr<exprtree> parseIdentifier();
     std::shared_ptr<exprtree> parseBlock();
