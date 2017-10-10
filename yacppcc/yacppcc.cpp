@@ -12,12 +12,13 @@ constexpr auto str = "\
 let int:  i = 20; \n\
 let int: j = 1; \n\
 let int: k = (i + j); \n\
-let int: name = -(-0); \n\
-name = name + k + 1;\n";
+let int: name = +-~0; \n\
+name = name + k + 1;\n\
+if(name == 100) name = name - 1;\n";
 
 void printToken(token tok, size_t indent) {
     std::cout << std::string(indent, ' ') << typeStringMap.at(tok.m_type) << ", " <<
-        std::to_string(tok.m_startPos) << ", " << std::to_string(tok.m_len) << std::endl;
+        std::to_string(tok.m_startPos) << ", " << std::to_string(tok.m_len) << ", " << tok.m_strval << std::endl;
 }
 
 void printTree(std::shared_ptr<exprtree> tree, size_t depth) {
@@ -29,11 +30,17 @@ void printTree(std::shared_ptr<exprtree> tree, size_t depth) {
 
 int main() {
     try {
-        auto tree = parser::parse(lexer::lex(str).begin());
+        auto toks = lexer::lex(str);
+        for each (auto tok in toks) {
+            printToken(tok, 0);
+        }
+        auto tree = parser::parse(toks.begin());
+
         printTree(tree, 0);
         return 0;
     }
     catch(const std::exception& ex) {
         std::cerr << "Unhandled exception: " << ex.what() << std::endl;
+        return 1;
     }
 }

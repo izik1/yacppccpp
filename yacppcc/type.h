@@ -13,13 +13,16 @@ enum class type {
     carrot,
     paren_open,
     paren_close,
+    equals_equals,
     curl_bracket_open,
     curl_bracket_close,
     identifier,
     equals,
     block,
+    tilda,
     keyword_if, // cpp has keywords too so I can't just type "if"
     keyword_let,
+    keyword_else,
 };
 
 extern std::unordered_map<type, std::string> typeStringMap;
@@ -33,6 +36,7 @@ inline bool isBinaryOp(type t) {
     case type::carrot:
     case type::slash:
     case type::equals:
+    case type::equals_equals:
         return true;
     default: return false;
     }
@@ -43,6 +47,7 @@ inline bool isUnaryOp(type t) {
     case type::plus:
     case type::minus:
     case type::carrot:
+    case type::tilda:
         return true;
 
     default: return false;

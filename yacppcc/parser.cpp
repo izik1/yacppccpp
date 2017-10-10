@@ -7,12 +7,13 @@
 
 // larger number = higher precedence.
 std::unordered_map<type, size_t> precedence = {
-    {type::plus, 1},
-    {type::minus, 1},
-    {type::slash, 2},
-    {type::carrot, 3},
-    {type::astrisk, 2},
+    {type::plus, 100},
+    {type::minus, 100},
     {type::equals, 0},
+    {type::slash, 200},
+    {type::carrot, 300},
+    {type::astrisk, 200},
+    {type::equals_equals, 50},
 };
 std::unordered_map<type, bool> isRightAssositve = {
     {type::plus, false},
@@ -21,6 +22,7 @@ std::unordered_map<type, bool> isRightAssositve = {
     {type::carrot, true},
     {type::equals, true},
     {type::astrisk, false},
+    {type::equals_equals, false}
 };
 
 token parser::peek() {
@@ -83,7 +85,7 @@ std::shared_ptr<exprtree> parser::parsePrimary() {
     case type::identifier: return std::make_shared<exprtree>(exprtree(tok));
     default:
         if(isUnaryOp(tok.m_type)) return parseUrnary(tok);
-        else throw std::logic_error("Invalid operation");
+        else throw std::logic_error("Unexpected token type for primary: " + typeStringMap[tok.m_type]);
     }
 }
 
@@ -98,9 +100,33 @@ std::shared_ptr<exprtree> parser::parseStatement() {
         return nullptr;
     case type::keyword_let:
         return parseVariable();
+    case type::keyword_if:
+    {
+        auto tree = std::make_shared<exprtree>(exprtree(advance()));
+        peek().expect(type::paren_open);
+        tree->subtrees.push_back(parseExpression(parsePrimary(), 0)); // condition.
+        auto brTrue = parseStatement();
+        tree->subtrees.push_back(brTrue);
+        if(peek().m_type == type::keyword_else) {
+            advance();
+            auto brElse = parseStatement();
+            tree->subtrees.push_back(brElse);
+            tree->m_tok.m_len = (brElse->m_tok.m_startPos - tree->m_tok.m_startPos) + brElse->m_tok.m_len;
+        } else {
+            tree->m_tok.m_len = (brTrue->m_tok.m_startPos - tree->m_tok.m_startPos) + brTrue->m_tok.m_len;
+        }
+        return tree;
+    }
+    case type::curl_bracket_open:
+    {
+        advance();
+        auto tree = parseBlock();
+        advance().expect(type::curl_bracket_close);
+        return tree;
+    }
     default:
         auto tree = parseExpression(parsePrimary(), 0);
-        advance().expect(type::semicolon);
+        tree->m_tok.m_len = token::getCombindedLen(tree->m_tok, advance().expect(type::semicolon));
         return tree;
     }
 }

@@ -2,10 +2,6 @@
 #include "lexer.h"
 #include "token.h"
 
-inline bool isOp(char c) {
-    return lexerSymbolMap.find(std::string(1, c)) != lexerSymbolMap.end();
-}
-
 const std::string wordEnds = "\t\n ";
 const std::string numberChars = "1234567890";
 inline bool contains(const std::string p_str, const std::string p_substr) {
@@ -27,8 +23,18 @@ enum class modetype {
     id,
 };
 
+inline bool isOp(std::string p_str) {
+    for each (auto pair in lexerSymbolMap) {
+        if(contains(pair.first, p_str)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 inline bool isId(const char p_char) {
-    return !isOp(p_char) && !contains(wordEnds, std::string(1, p_char));
+    return !isOp(std::string(1, p_char)) && !contains(wordEnds, std::string(1, p_char));
 }
 
 inline bool isKeyword(const std::string str) {
@@ -37,7 +43,7 @@ inline bool isKeyword(const std::string str) {
 
 inline modetype getMode(char p_charIn) {
     if(isNum(p_charIn)) return modetype::num;
-    if(isOp(p_charIn))  return modetype::op;
+    if(isOp(std::string(1, p_charIn)))  return modetype::op;
     if(isId(p_charIn))  return modetype::id;
     else                return modetype::skp;
 }
@@ -54,7 +60,7 @@ size_t lexIdentifier(const std::string p_in, std::vector<token> &tokens, const s
     for(; offset + len < p_in.length() && isId(p_in[offset + len]); len++) {}
 
     if(isKeyword(p_in.substr(offset, len))) {
-        tokens.push_back(token(lexerKeywordMap[p_in.substr(offset, len)], 0, "", offset, len));
+        tokens.push_back(token(lexerKeywordMap.at(p_in.substr(offset, len)), 0, p_in.substr(offset, len), offset, len));
     } else {
         tokens.push_back(token(type::identifier, 0, p_in.substr(offset, len), offset, len));
     }
@@ -63,8 +69,11 @@ size_t lexIdentifier(const std::string p_in, std::vector<token> &tokens, const s
 }
 
 size_t lexOp(const std::string p_in, std::vector<token> &tokens, const size_t offset) {
-    tokens.push_back(token(lexerSymbolMap[p_in.substr(offset, 1)], 0, p_in.substr(offset, 1), offset, 1));
-    return 1;
+    size_t len = 1;
+    for(; offset + len < p_in.length() && isOp(p_in.substr(offset, len + 1)); len++) {}
+
+    tokens.push_back(token(lexerSymbolMap[p_in.substr(offset, len)], 0, p_in.substr(offset, len), offset, len));
+    return len;
 }
 
 inline size_t lexToken(const std::string p_in, std::vector<token> &tokens, const size_t offset) {

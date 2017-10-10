@@ -13,10 +13,14 @@ std::unordered_map<type, std::string> typeStringMap{
     {type::carrot,       "carrot"},
     {type::identifier,   "identifier"},
     {type::equals,       "equals"},
+    {type::equals_equals,"equals_equals"},
     {type::keyword_let,  "let"},
+    {type::keyword_if,   "if"},
+    {type::keyword_else, "else"},
     {type::colon,        "colon"},
     {type::semicolon,    "semicolon"},
-    {type::block,        "block"}
+    {type::block,        "block"},
+    {type::tilda,        "tilda"},
 };
 
 std::unordered_map<std::string, type> lexerSymbolMap{
@@ -30,11 +34,14 @@ std::unordered_map<std::string, type> lexerSymbolMap{
     {"}", type::curl_bracket_close},
     {"^", type::carrot},
     {"=", type::equals},
+    {"==", type::equals_equals},
     {":", type::colon},
     {";", type::semicolon},
+    {"~", type::tilda},
 };
 
 std::unordered_map<std::string, type> lexerKeywordMap{
     {"if", type::keyword_if},
     {"let", type::keyword_let},
+    {"else", type::keyword_else},
 };
