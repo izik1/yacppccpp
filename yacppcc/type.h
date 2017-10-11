@@ -13,6 +13,10 @@ enum class type {
     carrot,
     paren_open,
     paren_close,
+    greater_than,
+    less_than,
+    plus_equals,
+    minus_equals,
     equals_equals,
     curl_bracket_open,
     curl_bracket_close,
@@ -28,7 +32,12 @@ enum class type {
 extern std::unordered_map<type, std::string> typeStringMap;
 extern std::unordered_map<std::string, type> lexerSymbolMap;
 extern std::unordered_map<std::string, type> lexerKeywordMap;
-inline bool isBinaryOp(type t) {
+
+inline std::string typeToString(const type t) {
+    return typeStringMap.at(t);
+}
+
+constexpr bool isBinaryOp(const type t) {
     switch(t) {
     case type::plus:
     case type::minus:
@@ -36,20 +45,22 @@ inline bool isBinaryOp(type t) {
     case type::carrot:
     case type::slash:
     case type::equals:
+    case type::greater_than:
+    case type::less_than:
     case type::equals_equals:
+    case type::plus_equals:
+    case type::minus_equals:
         return true;
     default: return false;
     }
 }
 
-inline bool isUnaryOp(type t) {
+constexpr bool isUnaryOp(const type t) {
     switch(t) {
     case type::plus:
     case type::minus:
-    case type::carrot:
     case type::tilda:
         return true;
-
     default: return false;
     }
 }

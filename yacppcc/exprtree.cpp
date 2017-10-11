@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "exprtree.h"
-
+#include "token.h"
 exprtree::exprtree() : m_tok(type::eof, 0, "", -1, -1) {
     subtrees = std::vector<std::shared_ptr<exprtree>>();
 }

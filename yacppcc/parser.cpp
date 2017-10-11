@@ -1,19 +1,24 @@
 #include "stdafx.h"
-#include "parser.h"
-#include "token.h"
 #include <unordered_map>
 #include <iterator>
 #include <cassert>
+#include "exprtree.h"
+#include "parser.h"
+#include "token.h"
 
 // larger number = higher precedence.
 std::unordered_map<type, size_t> precedence = {
-    {type::plus, 100},
-    {type::minus, 100},
+    {type::plus, 150},
+    {type::minus, 150},
+    {type::greater_than, 100},
+    {type::less_than, 100},
     {type::equals, 0},
     {type::slash, 200},
     {type::carrot, 300},
     {type::astrisk, 200},
     {type::equals_equals, 50},
+    {type::plus_equals, 50},
+    {type::minus_equals, 50},
 };
 std::unordered_map<type, bool> isRightAssositve = {
     {type::plus, false},
@@ -22,7 +27,9 @@ std::unordered_map<type, bool> isRightAssositve = {
     {type::carrot, true},
     {type::equals, true},
     {type::astrisk, false},
-    {type::equals_equals, false}
+    {type::plus_equals, false},
+    {type::minus_equals, false},
+    {type::equals_equals, false},
 };
 
 token parser::peek() {
@@ -38,19 +45,19 @@ token parser::advance() {
 }
 
 bool precidenceCompare(token a, token b) {
-    return precedence[a.m_type] > precedence[b.m_type] ||
-        (precedence[a.m_type] == precedence[b.m_type] && isRightAssositve[a.m_type]);
+    return precedence.at(a.m_type) > precedence.at(b.m_type) ||
+        (precedence.at(a.m_type) == precedence.at(b.m_type) && isRightAssositve.at(a.m_type));
 }
 
 std::shared_ptr<exprtree> parser::parseExpression(std::shared_ptr<exprtree> lhs, size_t minPrecidence) {
     auto lookahead = peek();
-    while(isBinaryOp(lookahead.m_type) && precedence[lookahead.m_type] >= minPrecidence) {
+    while(isBinaryOp(lookahead.m_type) && precedence.at(lookahead.m_type) >= minPrecidence) {
         auto op = lookahead;
         advance();
         auto rhs = parsePrimary();
         lookahead = peek();
         while(isBinaryOp(lookahead.m_type) && precidenceCompare(lookahead, op)) {
-            rhs = parseExpression(rhs, precedence[lookahead.m_type]);
+            rhs = parseExpression(rhs, precedence.at(lookahead.m_type));
             lookahead = peek();
         }
 

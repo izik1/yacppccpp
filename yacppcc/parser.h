@@ -1,8 +1,10 @@
 #pragma once
 #include <vector>
-#include "exprtree.h"
-#include <deque>
+#include <memory>
+
+//#include "exprtree.h"
 class token;
+class exprtree;
 class parser {
 public:
     static std::shared_ptr<exprtree> parse(std::vector<token>::iterator iterator);
