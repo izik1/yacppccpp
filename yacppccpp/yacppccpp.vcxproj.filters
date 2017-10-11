@@ -56,9 +56,6 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="yacppcc.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="token.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -83,9 +80,12 @@
     <ClCompile Include="helper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="yacppccpp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="yacppcc.rc">
+    <ResourceCompile Include="yacppccpp.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>

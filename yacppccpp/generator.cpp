@@ -147,6 +147,6 @@ void generator::generate(std::shared_ptr<exprtree> tree) {
 
 generator::generator() {
     NamedValues = std::map<std::string, llvm::AllocaInst*>();
-    module = llvm::make_unique<llvm::Module>("yacppcc", context);
+    module = llvm::make_unique<llvm::Module>("yacppccpp", context);
     llvmmain = llvm::Function::Create(llvm::FunctionType::get(i32, false), llvm::Function::ExternalLinkage, "main", module.get());
 }
