@@ -165,6 +165,7 @@
   <ItemGroup>
     <ClInclude Include="codetype.h" />
     <ClInclude Include="exprtree.h" />
+    <ClInclude Include="function.h" />
     <ClInclude Include="generator.h" />
     <ClInclude Include="helper.h" />
     <ClInclude Include="lexer.h" />
@@ -179,6 +180,7 @@
   <ItemGroup>
     <ClCompile Include="codetype.cpp" />
     <ClCompile Include="exprtree.cpp" />
+    <ClCompile Include="function.cpp" />
     <ClCompile Include="generator.cpp" />
     <ClCompile Include="helper.cpp" />
     <ClCompile Include="lexer.cpp" />

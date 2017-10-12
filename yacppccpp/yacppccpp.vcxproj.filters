@@ -54,6 +54,9 @@
     <ClInclude Include="codetype.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="function.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -87,6 +90,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="codetype.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="function.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

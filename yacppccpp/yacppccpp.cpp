@@ -18,10 +18,7 @@
 constexpr auto str = "\
 let i32:  i = 20+0; \n\
 let i8: j = i as i8;   \n\
-let i8: k = 2 as i8;   \n\
-let i8: l = j + k;   \n\
-let i8: m = 2 as i8 + 1 as i8;   \n\
-\n";
+let i8: k = 2 as i8;   \n";
 
 void printToken(token tok, size_t indent) {
     std::cerr << std::string(indent, ' ') << typeStringMap.at(tok.m_type) << ", " <<
