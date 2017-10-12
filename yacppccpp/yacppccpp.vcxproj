@@ -163,6 +163,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="codetype.h" />
     <ClInclude Include="exprtree.h" />
     <ClInclude Include="generator.h" />
     <ClInclude Include="helper.h" />
@@ -176,6 +177,7 @@
     <ClInclude Include="type.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="codetype.cpp" />
     <ClCompile Include="exprtree.cpp" />
     <ClCompile Include="generator.cpp" />
     <ClCompile Include="helper.cpp" />

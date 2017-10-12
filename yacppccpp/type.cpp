@@ -21,6 +21,7 @@ std::unordered_map<type, std::string> typeStringMap{
     {type::keyword_let,        "let"},
     {type::keyword_if,         "if"},
     {type::keyword_else,       "else"},
+    {type::keyword_as,         "as"},
     {type::colon,              "colon"},
     {type::semicolon,          "semicolon"},
     {type::block,              "block"},
@@ -54,4 +55,5 @@ std::unordered_map<std::string, type> lexerKeywordMap{
     {"if", type::keyword_if},
     {"let", type::keyword_let},
     {"else", type::keyword_else},
+    {"as", type::keyword_as},
 };

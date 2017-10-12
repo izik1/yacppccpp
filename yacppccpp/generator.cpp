@@ -10,18 +10,28 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
-#include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
 #include "helper.h"
 #include <exception>
 #include <cassert>
 static llvm::LLVMContext context;
 auto i32 = llvm::Type::getInt32Ty(context);
+auto i8 = llvm::Type::getInt8Ty(context);
+
 llvm::IRBuilder<> builder(context);
+codetype generator::getTreeType(std::shared_ptr<exprtree> tree) {
+    switch(tree->m_tok.m_type) {
+    case type::identifier:
+        return ValueTypes.at(tree->m_tok.m_strval);
+    case type::num:
+        return types.at("i32");
+    default:
+        throw std::logic_error("Couldn't find the type");
+    }
+}
 llvm::Value* generator::codeGen(std::shared_ptr<exprtree> tree) {
     if(isBinaryOp(tree->m_tok.m_type) && tree->subtrees.size() == 2) return binExprCodeGen(tree);
     if(isUnaryOp(tree->m_tok.m_type) && tree->subtrees.size() == 1) return unaryExprCodeGen(tree);
-
     switch(tree->m_tok.m_type) {
     case type::keyword_let: return letCodeGen(tree);
     case type::num: return builder.getInt32(tree->m_tok.m_value);
@@ -51,17 +61,24 @@ llvm::Value* generator::unaryExprCodeGen(std::shared_ptr<exprtree> expr) {
 }
 
 llvm::Value* generator::binExprCodeGen(std::shared_ptr<exprtree> expr) {
-    auto v = binExprCodeGen(codeGen(expr->subtrees.at(0)), codeGen(expr->subtrees.at(1)), expr->m_tok.m_type, false);
-    if(v == nullptr) {
-        switch(expr->m_tok.m_type) {
-        case type::equals: return assignCodeGen(expr, type::equals);
-        case type::plus_equals: return assignCodeGen(expr, type::plus);
-        case type::minus_equals: return assignCodeGen(expr, type::minus);
-        default: throw std::logic_error("unimplemented binary op");
-        }
+    if(expr->m_tok.m_type == type::keyword_as) {
+        assert(expr->subtrees.at(1)->m_tok.m_type == type::identifier);
+        auto lhs = expr->subtrees.at(0);
+        auto lhsType = getTreeType(lhs);
+        auto fn = lhsType.casts.at(expr->subtrees.at(1)->m_tok.m_strval);
+        return builder.CreateCall(fn, codeGen(lhs), "calltmp");
     }
-
-    return v;
+    switch(expr->m_tok.m_type) {
+    case type::equals: return assignCodeGen(expr, type::equals);
+    case type::plus_equals: return assignCodeGen(expr, type::plus);
+    case type::minus_equals: return assignCodeGen(expr, type::minus);
+    default:
+    {
+        auto v = binExprCodeGen(codeGen(expr->subtrees.at(0)), codeGen(expr->subtrees.at(1)), expr->m_tok.m_type, false);
+        if(v == nullptr) throw std::logic_error("unimplemented binary op");
+        return v;
+    }
+    }
 }
 
 /// <summary>
@@ -93,19 +110,29 @@ llvm::Value* generator::assignCodeGen(std::shared_ptr<exprtree> expr, const type
         throw std::logic_error("undefined indentifier on lhs of assignment");
     if(rhs == nullptr) throw std::logic_error("invalid rhs of assignment.");
 
-    if(t != type::equals)
+    if(t != type::equals) {
         rhs = binExprCodeGen(builder.CreateLoad(NamedValues[lhs.m_strval], lhs.m_strval), rhs, t, true);
+    }
+
     builder.CreateStore(rhs, NamedValues.at(lhs.m_strval));
     return nullptr;
 }
 
 llvm::Value* generator::letCodeGen(std::shared_ptr<exprtree> expr) {
-    assert(expr->subtrees.at(0)->m_tok.m_strval == "int"); // only allow int for now.
+    auto typeName = expr->subtrees.at(0)->m_tok.m_strval;
+    assert(typeName == "i32" || typeName == "i8"); // only allow int for now.
+    llvm::Type* type;
+    if(typeName == "i32") {
+        type = i32;
+    } else {
+        type = i8;
+    }
 
     llvm::Value* val = nullptr;
     auto id = expr->subtrees.at(1)->m_tok.m_strval;
-    auto alloc = builder.CreateAlloca(i32, nullptr, id);
+    auto alloc = builder.CreateAlloca(type, nullptr, id);
     NamedValues.insert(std::make_pair(id, alloc));
+    ValueTypes.insert(std::make_pair(id, types.at(typeName)));
     if(expr->subtrees.size() == 3) {
         codeGen(expr->subtrees.at(2));
     }
@@ -139,14 +166,34 @@ void generator::generate(std::shared_ptr<exprtree> tree) {
         codeGen(sub);
     }
 
-    builder.CreateRet(builder.CreateLoad(NamedValues["name"]));
+    builder.CreateRet(builder.CreateLoad(NamedValues["i"]));
     llvm::errs() << "\n";
     llvm::verifyModule(*module.get(), &llvm::errs());
     module->print(llvm::errs(), nullptr);
 }
 
+void generator::generatePrimitives() {
+    auto currentBB = builder.GetInsertBlock();
+    auto currentInsertPoint = builder.GetInsertPoint();
+    codetype i32_t = codetype(i32, "i32");
+    codetype i8_t = codetype(i8, "i8");
+    auto i32_to_i8_fnType = llvm::FunctionType::get(i8_t.getLlvmType(), i32_t.getLlvmType(), false);
+    auto i32_to_i8 = llvm::Function::Create(i32_to_i8_fnType, llvm::Function::ExternalLinkage, "i32_i8_cast", module.get());
+
+    llvm::Value* num = i32_to_i8->arg_begin();
+    auto i32_i8_cast_bb = llvm::BasicBlock::Create(context, "entry", i32_to_i8);
+    builder.SetInsertPoint(i32_i8_cast_bb);
+    builder.CreateRet(builder.CreateIntCast(num, i8_t.getLlvmType(), true, "cast"));
+    i32_t.casts.insert(std::make_pair("i8", i32_to_i8));
+    types.insert(std::make_pair("i32", i32_t));
+    types.insert(std::make_pair("i8", i8_t));
+}
+
 generator::generator() {
     NamedValues = std::map<std::string, llvm::AllocaInst*>();
+    ValueTypes = std::map<std::string, codetype>();
     module = llvm::make_unique<llvm::Module>("yacppccpp", context);
     llvmmain = llvm::Function::Create(llvm::FunctionType::get(i32, false), llvm::Function::ExternalLinkage, "main", module.get());
+    types = std::map<std::string, codetype>();
+    generatePrimitives();
 }

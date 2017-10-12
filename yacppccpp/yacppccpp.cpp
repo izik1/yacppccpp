@@ -11,24 +11,17 @@
 #include "exprtree.h"
 #include <algorithm>
 #include <cassert>
-#include <cctype>
 #include <cstdio>
-#include <cstdlib>
-#include <map>
 #include <memory>
 #include <string>
-#include <system_error>
-#include <utility>
-#include <vector>
 #include "generator.h"
 constexpr auto str = "\
-let int:  i = 20+0; \n\
-let int: j = 1; \n\
-let int: k = (i + j); \n\
-let int: name = 0; \n\
-name += k + 1;\n\
-if(name == 22) { name = 11; }\n\
-else { name = 22;} \n";
+let i32:  i = 20+0; \n\
+let i8: j = i as i8;   \n\
+let i8: k = 2 as i8;   \n\
+let i8: l = j + k;   \n\
+let i8: m = 2 as i8 + 1 as i8;   \n\
+\n";
 
 void printToken(token tok, size_t indent) {
     std::cerr << std::string(indent, ' ') << typeStringMap.at(tok.m_type) << ", " <<

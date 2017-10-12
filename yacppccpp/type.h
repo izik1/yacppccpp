@@ -27,6 +27,7 @@ enum class type {
     keyword_if, // cpp has keywords too so I can't just type "if"
     keyword_let,
     keyword_else,
+    keyword_as,
 };
 
 extern std::unordered_map<type, std::string> typeStringMap;
@@ -50,6 +51,7 @@ constexpr bool isBinaryOp(const type t) {
     case type::equals_equals:
     case type::plus_equals:
     case type::minus_equals:
+    case type::keyword_as:
         return true;
     default: return false;
     }

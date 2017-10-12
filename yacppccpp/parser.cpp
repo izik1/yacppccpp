@@ -8,6 +8,7 @@
 
 // larger number = higher precedence.
 std::unordered_map<type, size_t> precedence = {
+    {type::keyword_as, 1000},
     {type::plus, 150},
     {type::minus, 150},
     {type::greater_than, 100},
@@ -21,6 +22,7 @@ std::unordered_map<type, size_t> precedence = {
     {type::minus_equals, 50},
 };
 std::unordered_map<type, bool> isRightAssositve = {
+    {type::keyword_as, false},
     {type::plus, false},
     {type::minus, false},
     {type::slash, false},
