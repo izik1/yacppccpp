@@ -17,6 +17,8 @@ enum class type {
     less_than,
     plus_equals,
     minus_equals,
+    astrisk_equals,
+    slash_equals,
     equals_equals,
     not_equals,
     curl_bracket_open,
@@ -56,6 +58,8 @@ constexpr bool isBinaryOp(const type t) {
     case type::not_equals:
     case type::plus_equals:
     case type::minus_equals:
+    case type::astrisk_equals:
+    case type::slash_equals:
     case type::keyword_as:
         return true;
     default: return false;

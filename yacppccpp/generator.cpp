@@ -160,6 +160,8 @@ namespace codegen {
         case type::equals: return assignCodeGen(expr, type::equals);
         case type::plus_equals: return assignCodeGen(expr, type::plus);
         case type::minus_equals: return assignCodeGen(expr, type::minus);
+        case type::astrisk_equals: return assignCodeGen(expr, type::astrisk);
+        case type::slash_equals: return assignCodeGen(expr, type::slash);
         case type::keyword_as: return asCodeGen(expr);
         default: return binExprCodeGen(codeGen(expr->subtrees.at(0)), codeGen(expr->subtrees.at(1)), expr->m_tok.m_type);
         }

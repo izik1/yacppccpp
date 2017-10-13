@@ -18,6 +18,8 @@ std::unordered_map<type, size_t> precedence = {
     {type::carrot, 300},
     {type::astrisk, 200},
     {type::equals_equals, 50},
+    {type::astrisk_equals, 50},
+    {type::slash_equals, 50},
     {type::not_equals, 50},
     {type::plus_equals, 50},
     {type::minus_equals, 50},
@@ -33,6 +35,8 @@ std::unordered_map<type, bool> isRightAssositve = {
     {type::plus_equals, false},
     {type::minus_equals, false},
     {type::equals_equals, false},
+    {type::astrisk_equals, false},
+    {type::slash_equals, false},
     {type::not_equals, false},
 };
 

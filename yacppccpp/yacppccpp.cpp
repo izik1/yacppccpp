@@ -16,16 +16,19 @@
 #include <string>
 #include "generator.h"
 constexpr auto str = "\
-let i32: i = 0;        \n\
-let i32: j = 15;       \n\
-let i8: k;             \n\
-while(j!=0){           \n\
-    k = 2 as i8;       \n\
-    until(k==0 as i8){ \n\
-        k-=1 as i8;    \n\
-        i+=1;          \n\
-    }                  \n\
-    j = j - 1;         \n\
+let i32: i = 0;          \n\
+let i32: j = 15;         \n\
+while(j != 0){           \n\
+    let i8: k = 2 as i8; \n\
+    until(k == 0 as i8){ \n\
+        k -= 1 as i8;    \n\
+        i += 1;          \n\
+        if(i / 2 == 10){ \n\
+            i *= 5;      \n\
+        }                \n\
+    }                    \n\
+                         \n\
+    j -= 1;              \n\
 }";
 
 void printToken(token tok, size_t indent) {
@@ -41,25 +44,23 @@ void printTree(std::shared_ptr<exprtree> tree, size_t depth) {
 }
 
 int main() {
-    while(true) {
-        try {
-            auto toks = lexer::lex(str);
-            for each (auto tok in toks) {
+    try {
+        auto toks = lexer::lex(str);
+        for each (auto tok in toks) {
 
-                // printToken(tok, 0);
-            }
-
-            //std::cerr << std::endl;
-            auto tree = parser::parse(toks.begin());
-
-            //printTree(tree, 0);
-            codegen::generator().generate(tree);
+            // printToken(tok, 0);
         }
-        catch(const std::exception& ex) {
-            std::cerr << "Unhandled exception: " << ex.what() << std::endl;
-            throw;
-            return 1;
-        }
+
+        //std::cerr << std::endl;
+        auto tree = parser::parse(toks.begin());
+
+        //printTree(tree, 0);
+        codegen::generator().generate(tree);
+    }
+    catch(const std::exception& ex) {
+        std::cerr << "Unhandled exception: " << ex.what() << std::endl;
+        throw;
+        return 1;
     }
 
     return 0;
