@@ -18,16 +18,20 @@ enum class type {
     plus_equals,
     minus_equals,
     equals_equals,
+    not_equals,
     curl_bracket_open,
     curl_bracket_close,
     identifier,
     equals,
     block,
     tilda,
+    not,
     keyword_if, // cpp has keywords too so I can't just type "if"
     keyword_let,
     keyword_else,
     keyword_as,
+    keyword_while,
+    keyword_until,
 };
 
 extern std::unordered_map<type, std::string> typeStringMap;
@@ -49,6 +53,7 @@ constexpr bool isBinaryOp(const type t) {
     case type::greater_than:
     case type::less_than:
     case type::equals_equals:
+    case type::not_equals:
     case type::plus_equals:
     case type::minus_equals:
     case type::keyword_as:
@@ -61,6 +66,7 @@ constexpr bool isUnaryOp(const type t) {
     switch(t) {
     case type::plus:
     case type::minus:
+    case type::not:
     case type::tilda:
         return true;
     default: return false;

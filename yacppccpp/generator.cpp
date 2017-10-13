@@ -20,6 +20,7 @@
 #include <exception>
 #include <cassert>
 #include "codetype.h"
+#undef not // this got pulled in from somewhere, I don't want it.
 static llvm::LLVMContext context;
 auto undef_sign_64b_t = llvm::Type::getInt64Ty(context);
 auto undef_sign_32b_t = llvm::Type::getInt32Ty(context);
@@ -67,7 +68,9 @@ exprVal generator::codeGen(std::shared_ptr<exprtree> tree) {
         }
 
         return voidExpr;
-
+    case type::keyword_while:
+    case type::keyword_until:
+        return whileUntilCodeGen(tree);
     default: throw std::logic_error("unexpected op");
     }
 }
@@ -90,6 +93,12 @@ exprVal generator::unaryExprCodeGen(std::shared_ptr<exprtree> expr) {
     case defType::primUInt:
         switch(expr->m_tok.m_type) {
         case type::tilda: return {type, builder.CreateNot(val, "nottmp")}; // bitwise NOT.
+        default: throw std::logic_error("unimplemented unary op for primitive unsigned types");
+        }
+
+    case defType::primBool:
+        switch(expr->m_tok.m_type) {
+        case type::not: return {type, builder.CreateNot(val, "nottmp")}; // bitwise NOT.
         default: throw std::logic_error("unimplemented unary op for primitive unsigned types");
         }
 
@@ -131,6 +140,25 @@ exprVal generator::asCodeGen(std::shared_ptr<exprtree> &expr) {
     }
 }
 
+exprVal generator::whileUntilCodeGen(std::shared_ptr<exprtree> expr) {
+    auto loophead = llvm::BasicBlock::Create(context, "loop_head", llvmmain);
+    auto loopbody = llvm::BasicBlock::Create(context, "loop_body", llvmmain);
+    auto looptail = llvm::BasicBlock::Create(context, "loop_tail", llvmmain);
+    builder.CreateBr(loophead);
+    builder.SetInsertPoint(loophead);
+    auto condVal = unwrap(codeGen(expr->subtrees.at(0)));
+    if(expr->m_tok.m_type == type::keyword_while)
+        builder.CreateCondBr(condVal, loopbody, looptail);
+    else builder.CreateCondBr(condVal, looptail, loopbody);
+
+    builder.SetInsertPoint(loopbody);
+    codeGen(expr->subtrees.at(1));
+    builder.CreateBr(loophead);
+
+    builder.SetInsertPoint(looptail);
+    return voidExpr;
+}
+
 exprVal generator::binExprCodeGen(std::shared_ptr<exprtree> expr) {
     switch(expr->m_tok.m_type) {
     case type::equals: return assignCodeGen(expr, type::equals);
@@ -163,6 +191,7 @@ exprVal generator::binExprCodeGen(exprVal lhs, exprVal rhs, const type t) {
         case defType::primSInt:
             switch(t) {
             case type::equals_equals: return {types.at("bool"), builder.CreateICmpEQ(lhs_value, rhs_value, "eqtmp")};
+            case type::not_equals: return {types.at("bool"), builder.CreateICmpNE(lhs_value, rhs_value, "netmp")};
             case type::plus: return {lhs_type, builder.CreateNSWAdd(lhs_value, rhs_value, "addtmp")};
             case type::minus: return {lhs_type, builder.CreateNSWSub(lhs_value, rhs_value, "subtmp")};
             case type::astrisk: return {lhs_type, builder.CreateNSWMul(lhs_value, rhs_value, "multmp")};
@@ -173,6 +202,7 @@ exprVal generator::binExprCodeGen(exprVal lhs, exprVal rhs, const type t) {
         case defType::primUInt:
             switch(t) {
             case type::equals_equals: return {types.at("bool"), builder.CreateICmpEQ(lhs_value, rhs_value, "eqtmp")};
+            case type::not_equals: return {types.at("bool"), builder.CreateICmpNE(lhs_value, rhs_value, "netmp")};
             case type::plus: return {lhs_type, builder.CreateNUWAdd(lhs_value, rhs_value, "addtmp")};
             case type::minus: return {lhs_type, builder.CreateNUWSub(lhs_value, rhs_value, "subtmp")};
             case type::astrisk: return {lhs_type, builder.CreateNUWMul(lhs_value, rhs_value, "multmp")};
@@ -184,6 +214,7 @@ exprVal generator::binExprCodeGen(exprVal lhs, exprVal rhs, const type t) {
         case defType::primBool:
             switch(t) {
             case type::equals_equals: return {types.at("bool"), builder.CreateICmpEQ(lhs_value, rhs_value, "eqtmp")};
+            case type::not_equals:    return {types.at("bool"), builder.CreateICmpNE(lhs_value, rhs_value, "netmp")};
             default: throw std::logic_error("unimplemented binary op on boolean primary");
             }
         default: throw std::logic_error("unexpected type-definition enum value");

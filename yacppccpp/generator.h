@@ -26,6 +26,7 @@ private:
     codetype* getTreeType(std::shared_ptr<exprtree> tree);
     exprVal codeGen(std::shared_ptr<exprtree> tree);
     exprVal asCodeGen(std::shared_ptr<exprtree> &expr);
+    exprVal whileUntilCodeGen(std::shared_ptr<exprtree> expr);
     exprVal binExprCodeGen(std::shared_ptr<exprtree> expr);
     exprVal binExprCodeGen(exprVal lhs, exprVal rhs, const type t);
     exprVal unaryExprCodeGen(std::shared_ptr<exprtree> expr);

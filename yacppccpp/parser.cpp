@@ -18,6 +18,7 @@ std::unordered_map<type, size_t> precedence = {
     {type::carrot, 300},
     {type::astrisk, 200},
     {type::equals_equals, 50},
+    {type::not_equals, 50},
     {type::plus_equals, 50},
     {type::minus_equals, 50},
 };
@@ -32,6 +33,7 @@ std::unordered_map<type, bool> isRightAssositve = {
     {type::plus_equals, false},
     {type::minus_equals, false},
     {type::equals_equals, false},
+    {type::not_equals, false},
 };
 
 token parser::peek() {
@@ -109,6 +111,16 @@ std::shared_ptr<exprtree> parser::parseStatement() {
         return nullptr;
     case type::keyword_let:
         return parseVariable();
+    case type::keyword_while:
+    case type::keyword_until:
+    {
+        auto tree = std::make_shared<exprtree>(exprtree(advance()));
+        peek().expect(type::paren_open);
+        tree->subtrees.push_back(parseExpression(parsePrimary(), 0)); // condition.
+        tree->subtrees.push_back(parseStatement());
+
+        return tree;
+    }
     case type::keyword_if:
     {
         auto tree = std::make_shared<exprtree>(exprtree(advance()));
