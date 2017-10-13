@@ -18,12 +18,13 @@ namespace codegen {
         void generate(std::shared_ptr<exprtree> tree);
         generator();
     private:
-
-        std::unordered_map<std::string, codegen::value> NamedValues;
+        typedef std::unordered_map<std::string, codegen::value> valuemap_t;
+        valuemap_t NamedValues;
+        std::vector<valuemap_t> valueStack;
         std::unordered_map<std::string, std::shared_ptr<codetype>> types;
         void generatePrimitives();
         llvm::Function* llvmmain;
-        std::unique_ptr<llvm::Module> module;
+        std::unique_ptr<llvm::Module> mod;
         exprVal codeGen(std::shared_ptr<exprtree> tree);
         exprVal asCodeGen(std::shared_ptr<exprtree> &expr);
         exprVal whileUntilCodeGen(std::shared_ptr<exprtree> expr);

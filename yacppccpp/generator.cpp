@@ -56,10 +56,13 @@ namespace codegen {
         case type::keyword_if:
             return ifCodeGen(tree);
         case type::block:
+            valueStack.push_back(NamedValues);
             for each (auto sub in tree->subtrees) {
                 codeGen(sub);
             }
 
+            NamedValues = valueStack.at(valueStack.size() - 1);
+            valueStack.pop_back();
             return voidExpr;
         case type::keyword_while:
         case type::keyword_until:
@@ -290,9 +293,9 @@ namespace codegen {
 
         builder.CreateRet(builder.CreateLoad(NamedValues.at("i").m_value));
         llvm::errs() << "\n";
-        llvm::verifyModule(*module.get(), &llvm::errs());
+        llvm::verifyModule(*mod.get(), &llvm::errs());
 
-        //module->print(llvm::errs(), nullptr);
+        mod->print(llvm::errs(), nullptr);
     }
 
     void generator::generatePrimitives() {
@@ -307,11 +310,9 @@ namespace codegen {
         types.insert(std::make_pair("bool", std::make_shared<codetype>(codetype(bool_t, "bool", defType::primBool))));
     }
 
-    generator::generator() {
-        NamedValues = std::unordered_map<std::string, codegen::value>();
-        module = llvm::make_unique<llvm::Module>("yacppccpp", context);
-        llvmmain = llvm::Function::Create(llvm::FunctionType::get(undef_sign_32b_t, false), llvm::Function::ExternalLinkage, "main", module.get());
-        types = std::unordered_map<std::string, std::shared_ptr<codetype>>();
+    generator::generator() : NamedValues(), types(), valueStack() {
+        mod = llvm::make_unique<llvm::Module>("yacppccpp", context);
+        llvmmain = llvm::Function::Create(llvm::FunctionType::get(undef_sign_32b_t, false), llvm::Function::ExternalLinkage, "main", mod.get());
         generatePrimitives();
     }
 }
