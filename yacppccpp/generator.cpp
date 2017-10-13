@@ -21,8 +21,11 @@
 #include <cassert>
 #include "codetype.h"
 static llvm::LLVMContext context;
-auto i32 = llvm::Type::getInt32Ty(context);
-auto i8 = llvm::Type::getInt8Ty(context);
+auto undef_sign_64b_t = llvm::Type::getInt64Ty(context);
+auto undef_sign_32b_t = llvm::Type::getInt32Ty(context);
+auto undef_sign_16b_t = llvm::Type::getInt16Ty(context);
+auto undef_sign_8b_t = llvm::Type::getInt8Ty(context);
+auto bool_t = llvm::Type::getInt1Ty(context);
 
 constexpr codetype* voidtype = nullptr;
 
@@ -77,37 +80,64 @@ exprVal generator::unaryExprCodeGen(std::shared_ptr<exprtree> expr) {
     codetype* type;
     llvm::Value* val;
     std::tie(type, val) = codeGen(expr->subtrees.at(0));
-    auto fn = type->lookupOp(expr->m_tok.m_type, {type});
-    if(!fn) {
-        throw std::logic_error("unimplemented unary op for type");
+    switch(type->m_defType) {
+    case defType::primSInt:
+        switch(expr->m_tok.m_type) {
+        case type::minus: return {type, builder.CreateNeg(val, "negtmp")}; // negate
+        case type::tilda: return {type, builder.CreateNot(val, "nottmp")}; // bitwise NOT.
+        default: throw std::logic_error("unimplemented unary op for primitive signed types");
+        }
+    case defType::primUInt:
+        switch(expr->m_tok.m_type) {
+        case type::tilda: return {type, builder.CreateNot(val, "nottmp")}; // bitwise NOT.
+        default: throw std::logic_error("unimplemented unary op for primitive unsigned types");
+        }
+
+    case defType::user:
+    {
+        auto fn = type->lookupOp(expr->m_tok.m_type, {type});
+        if(!fn) throw std::logic_error("unimplemented unary op for type");
+        return {fn->retType, builder.CreateCall(fn->m_function, val, "unary call")};
+    }
+    default: throw std::logic_error("unexpected type-definition enum value in unary operation");
+    }
+}
+
+exprVal generator::asCodeGen(std::shared_ptr<exprtree> &expr) {
+    assert(expr->subtrees.at(1)->m_tok.m_type == type::identifier);
+
+    codetype* lhs_type;
+    llvm::Value* lhs_value;
+    std::tie(lhs_type, lhs_value) = codeGen(expr->subtrees.at(0));
+    auto rhs_type = types.at(expr->subtrees.at(1)->m_tok.m_strval);
+    if(!lhs_type->isPrimitive() || !rhs_type->isPrimitive()) {
+        return {rhs_type, builder.CreateCall(lhs_type->casts.at(rhs_type), lhs_value, "calltmp")};
     }
 
-    return {fn->retType, builder.CreateCall(fn->m_function, val, "unary call")};
-
-    //switch(expr->m_tok.m_type) {
-    //case type::minus: return builder.CreateNeg(codeGen(), "negtmp"); // negate
-    //case type::tilda: return builder.CreateNot(codeGen(expr->subtrees.at(0)), "nottmp"); // bitwise NOT.
-    //default: throw std::logic_error("unimplemented unary op");
-    //}
+    switch(rhs_type->m_defType) {
+    case defType::primSInt:
+        switch(lhs_type->m_defType) {
+        case defType::primSInt:
+        case defType::primUInt:
+            return {rhs_type, builder.CreateIntCast(lhs_value, rhs_type->getLlvmType(), true, "castmp")};
+        }
+    case defType::primUInt:
+        switch(lhs_type->m_defType) {
+        case defType::primSInt:
+        case defType::primUInt:
+            return {rhs_type, builder.CreateIntCast(lhs_value, rhs_type->getLlvmType(), false, "castmp")};
+        }
+    default: throw std::logic_error("unexpected type-definition enum value in cast");
+    }
 }
 
 exprVal generator::binExprCodeGen(std::shared_ptr<exprtree> expr) {
-    if(expr->m_tok.m_type == type::keyword_as) {
-        assert(expr->subtrees.at(1)->m_tok.m_type == type::identifier);
-
-        codetype* lhs_type;
-        llvm::Value* lhs_value;
-        std::tie(lhs_type, lhs_value) = codeGen(expr->subtrees.at(0));
-        auto rhsType = types.at(expr->subtrees.at(1)->m_tok.m_strval);
-
-        return {rhsType, builder.CreateCall(lhs_type->casts.at(rhsType), lhs_value, "calltmp")};
-    }
     switch(expr->m_tok.m_type) {
     case type::equals: return assignCodeGen(expr, type::equals);
     case type::plus_equals: return assignCodeGen(expr, type::plus);
     case type::minus_equals: return assignCodeGen(expr, type::minus);
-    default:
-        return binExprCodeGen(codeGen(expr->subtrees.at(0)), codeGen(expr->subtrees.at(1)), expr->m_tok.m_type);
+    case type::keyword_as: return asCodeGen(expr);
+    default: return binExprCodeGen(codeGen(expr->subtrees.at(0)), codeGen(expr->subtrees.at(1)), expr->m_tok.m_type);
     }
 }
 
@@ -127,21 +157,41 @@ exprVal generator::binExprCodeGen(exprVal lhs, exprVal rhs, const type t) {
     llvm::Value* rhs_value;
     std::tie(rhs_type, rhs_value) = rhs;
     assert(lhs_type && rhs_type && "subexpressions cannot be void");
+    if(lhs_type->isPrimitive()) {
+        assert(lhs_type == rhs_type);
+        switch(lhs_type->m_defType) {
+        case defType::primSInt:
+            switch(t) {
+            case type::equals_equals: return {types.at("bool"), builder.CreateICmpEQ(lhs_value, rhs_value, "eqtmp")};
+            case type::plus: return {lhs_type, builder.CreateNSWAdd(lhs_value, rhs_value, "addtmp")};
+            case type::minus: return {lhs_type, builder.CreateNSWSub(lhs_value, rhs_value, "subtmp")};
+            case type::astrisk: return {lhs_type, builder.CreateNSWMul(lhs_value, rhs_value, "multmp")};
+            case type::slash: return {lhs_type, builder.CreateSDiv(lhs_value, rhs_value, "divtmp")};
+            case type::carrot: return {lhs_type, builder.CreateXor(lhs_value, rhs_value, "xortmp")};
+            default: throw std::logic_error("unimplemented binary op on signed integer primary");
+            }
+        case defType::primUInt:
+            switch(t) {
+            case type::equals_equals: return {types.at("bool"), builder.CreateICmpEQ(lhs_value, rhs_value, "eqtmp")};
+            case type::plus: return {lhs_type, builder.CreateNUWAdd(lhs_value, rhs_value, "addtmp")};
+            case type::minus: return {lhs_type, builder.CreateNUWSub(lhs_value, rhs_value, "subtmp")};
+            case type::astrisk: return {lhs_type, builder.CreateNUWMul(lhs_value, rhs_value, "multmp")};
+            case type::slash: return {lhs_type, builder.CreateUDiv(lhs_value, rhs_value, "divtmp")};
+            case type::carrot: return {lhs_type, builder.CreateXor(lhs_value, rhs_value, "xortmp")};
+            default: throw std::logic_error("unimplemented binary op on unsigned integer primary");
+            }
 
+        case defType::primBool:
+            switch(t) {
+            case type::equals_equals: return {types.at("bool"), builder.CreateICmpEQ(lhs_value, rhs_value, "eqtmp")};
+            default: throw std::logic_error("unimplemented binary op on boolean primary");
+            }
+        default: throw std::logic_error("unexpected type-definition enum value");
+        }
+    };
     function* op = lhs_type->lookupOp(t, {lhs_type, rhs_type});
     if(!op) throw std::logic_error("non-existant operator for given type");
-
     return {op->retType, builder.CreateCall(op->m_function, llvm::makeArrayRef({lhs_value, rhs_value}), "opcall")};
-
-    //switch(t) {
-    //case type::equals_equals: return builder.CreateICmpEQ(lhs, rhs, "eqtmp");
-    //case type::plus: return builder.CreateAdd(lhs, rhs, "addtmp");
-    //case type::minus: return builder.CreateSub(lhs, rhs, "subtmp");
-    //case type::astrisk: return builder.CreateMul(lhs, rhs, "multmp");
-    //case type::slash: return builder.CreateMul(lhs, rhs, "divtmp");
-    //case type::carrot: return builder.CreateXor(lhs, rhs, "xortmp");
-    //default: throw std::logic_error("unimplemented binary op");
-    //}
 }
 
 exprVal generator::assignCodeGen(std::shared_ptr<exprtree> expr, const type t) {
@@ -172,12 +222,12 @@ exprVal generator::assignCodeGen(std::shared_ptr<exprtree> expr, const type t) {
 
 exprVal generator::letCodeGen(std::shared_ptr<exprtree> expr) {
     auto typeName = expr->subtrees.at(0)->m_tok.m_strval;
-    assert(typeName == "i32" || typeName == "i8"); // only allow int for now.
+    assert(types.find(typeName) != types.end() && "Undefined type"); // assert the type exists.
     llvm::Type* type;
     if(typeName == "i32") {
-        type = i32;
+        type = undef_sign_32b_t;
     } else {
-        type = i8;
+        type = undef_sign_8b_t;
     }
 
     llvm::Value* val = nullptr;
@@ -200,12 +250,10 @@ exprVal generator::ifCodeGen(std::shared_ptr<exprtree> tree) {
     builder.SetInsertPoint(br_true);
     codeGen(tree->subtrees.at(1));
     builder.CreateBr(br_end);
-    if(tree->subtrees.size() == 3) {
-        builder.SetInsertPoint(br_false);
-        codeGen(tree->subtrees.at(2));
-        builder.CreateBr(br_end);
-    }
+    builder.SetInsertPoint(br_false);
+    if(tree->subtrees.size() == 3) codeGen(tree->subtrees.at(2));
 
+    builder.CreateBr(br_end);
     builder.SetInsertPoint(br_end);
     return voidExpr;
 }
@@ -229,37 +277,22 @@ void i32_add(std::map<std::string, codetype*> types, llvm::Module* mod) {
 }
 
 void generator::generatePrimitives() {
-    types.insert(std::make_pair("i32", new codetype(i32, "i32")));
-    auto i32_t = types.at("i32");
-    types.insert(std::make_pair("i8", new codetype(i8, "i8")));
-    auto i8_t = types.at("i8");
-    auto i32_llvm_type = i32_t->getLlvmType();
-    auto i32_to_i8_fnType = llvm::FunctionType::get(i8_t->getLlvmType(), i32_llvm_type, false);
-    auto i32_to_i8 = llvm::Function::Create(i32_to_i8_fnType, llvm::Function::ExternalLinkage, "i32_i8_cast", module.get());
-
-    llvm::Value* num = i32_to_i8->arg_begin();
-    auto i32_i8_cast_bb = llvm::BasicBlock::Create(context, "entry", i32_to_i8);
-    builder.SetInsertPoint(i32_i8_cast_bb);
-
-    builder.CreateRet(builder.CreateIntCast(num, i8_t->getLlvmType(), true, "cast"));
-    i32_t->casts.insert(std::make_pair(i8_t, i32_to_i8));
-
-    auto i32_arrith_type = llvm::FunctionType::get(i32_llvm_type, llvm::makeArrayRef({i32_llvm_type, i32_llvm_type}), false);
-    auto i32_add = llvm::Function::Create(i32_arrith_type, llvm::GlobalValue::LinkageTypes::ExternalLinkage, "i32_add", module.get());
-    llvm::Value* lhs = i32_add->arg_begin();
-    llvm::Value* rhs = i32_add->arg_begin() + 1;
-    auto i32_add_bb = llvm::BasicBlock::Create(context, "entry", i32_add);
-    builder.SetInsertPoint(i32_add_bb);
-    builder.CreateRet(builder.CreateAdd(lhs, rhs, "addtmp", false, true));
-    auto f = new function({i32_t, i32_t}, i32_t, i32_add);
-    i32_t->ops.push_back({type::plus, f});
+    types.insert(std::make_pair("i8", new codetype(undef_sign_8b_t, "i8", defType::primSInt)));
+    types.insert(std::make_pair("u8", new codetype(undef_sign_8b_t, "u8", defType::primUInt)));
+    types.insert(std::make_pair("i16", new codetype(undef_sign_8b_t, "i16", defType::primSInt)));
+    types.insert(std::make_pair("u16", new codetype(undef_sign_8b_t, "u16", defType::primUInt)));
+    types.insert(std::make_pair("i32", new codetype(undef_sign_8b_t, "i32", defType::primSInt)));
+    types.insert(std::make_pair("u32", new codetype(undef_sign_8b_t, "u32", defType::primUInt)));
+    types.insert(std::make_pair("i64", new codetype(undef_sign_8b_t, "i64", defType::primSInt)));
+    types.insert(std::make_pair("u64", new codetype(undef_sign_8b_t, "u64", defType::primUInt)));
+    types.insert(std::make_pair("bool", new codetype(bool_t, "bool", defType::primBool)));
 }
 
 generator::generator() {
     NamedValues = std::map<std::string, llvm::AllocaInst*>();
     ValueTypes = std::map<std::string, codetype*>();
     module = llvm::make_unique<llvm::Module>("yacppccpp", context);
-    llvmmain = llvm::Function::Create(llvm::FunctionType::get(i32, false), llvm::Function::ExternalLinkage, "main", module.get());
+    llvmmain = llvm::Function::Create(llvm::FunctionType::get(undef_sign_32b_t, false), llvm::Function::ExternalLinkage, "main", module.get());
     types = std::map<std::string, codetype*>();
     generatePrimitives();
 }

@@ -11,15 +11,25 @@ namespace llvm {
     class Function;
 }
 
+enum class defType {
+    user,
+    primSInt,
+    primUInt,
+    primFP,
+    primBool,
+};
+
 class codetype {
 public:
     const std::string m_name;
+    const defType m_defType;
+    bool isPrimitive();
     std::pair<std::string, codetype> make_pair() const;
     llvm::Type* getLlvmType() const;
     std::unordered_map<codetype*, llvm::Function*> casts;
     std::vector<std::tuple<type, function*>> ops;
     function* lookupOp(type t, std::vector<codetype*> args);
-    codetype(llvm::Type* p_type, const std::string p_name);
+    codetype(llvm::Type* p_type, const std::string p_name, defType p_defType);
     bool operator==(codetype &other);
     ~codetype();
 private:

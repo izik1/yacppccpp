@@ -16,9 +16,10 @@
 #include <string>
 #include "generator.h"
 constexpr auto str = "\
-let i32:  i = 20+0; \n\
-let i8: j = i as i8;   \n\
-let i8: k = 2 as i8;   \n";
+let i32:  i = 20+0;   \n\
+let i8: j = i as i8;  \n\
+let i8: k = 2 as i8;  \n\
+if(k == j) i = 0;  else{i=1;};   \n";
 
 void printToken(token tok, size_t indent) {
     std::cerr << std::string(indent, ' ') << typeStringMap.at(tok.m_type) << ", " <<
