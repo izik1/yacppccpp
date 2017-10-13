@@ -176,6 +176,7 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="token.h" />
     <ClInclude Include="type.h" />
+    <ClInclude Include="value.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="codetype.cpp" />
@@ -194,6 +195,7 @@
     </ClCompile>
     <ClCompile Include="token.cpp" />
     <ClCompile Include="type.cpp" />
+    <ClCompile Include="value.cpp" />
     <ClCompile Include="yacppccpp.cpp" />
   </ItemGroup>
   <ItemGroup>

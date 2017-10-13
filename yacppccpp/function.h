@@ -4,9 +4,12 @@
 #include <vector>
 class function {
 public:
-    const std::vector<codetype*> m_paramTypes;
-    codetype* retType;
+    const std::vector<std::shared_ptr<codetype>> m_paramTypes;
+    std::shared_ptr<codetype> retType;
     llvm::Function* m_function;
-    function(const std::vector<codetype*> p_paramTypes, codetype* p_retType, llvm::Function* p_function);
+    function(
+        const std::vector<std::shared_ptr<codetype>> p_paramTypes,
+        std::shared_ptr<codetype> p_retType,
+        llvm::Function* p_function);
 private:
 };

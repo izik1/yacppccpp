@@ -6,15 +6,11 @@ bool codetype::isPrimitive() {
     return m_defType != defType::user;
 }
 
-std::pair<std::string, codetype> codetype::make_pair() const {
-    return std::make_pair(this->m_name, *this);
-}
-
 llvm::Type* codetype::getLlvmType() const {
     return m_llvmType;
 }
 
-function* codetype::lookupOp(type t, std::vector<codetype*> args) {
+function* codetype::lookupOp(type t, std::vector<std::shared_ptr<codetype>> args) {
     for each (auto tuple in ops) {
         type fn_t;
         function* fn;

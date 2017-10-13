@@ -41,21 +41,26 @@ void printTree(std::shared_ptr<exprtree> tree, size_t depth) {
 }
 
 int main() {
-    try {
-        auto toks = lexer::lex(str);
-        for each (auto tok in toks) {
-            printToken(tok, 0);
-        }
+    while(true) {
+        try {
+            auto toks = lexer::lex(str);
+            for each (auto tok in toks) {
 
-        std::cerr << std::endl;
-        auto tree = parser::parse(toks.begin());
-        printTree(tree, 0);
-        generator().generate(tree);
-        return 0;
+                // printToken(tok, 0);
+            }
+
+            //std::cerr << std::endl;
+            auto tree = parser::parse(toks.begin());
+
+            //printTree(tree, 0);
+            codegen::generator().generate(tree);
+        }
+        catch(const std::exception& ex) {
+            std::cerr << "Unhandled exception: " << ex.what() << std::endl;
+            throw;
+            return 1;
+        }
     }
-    catch(const std::exception& ex) {
-        std::cerr << "Unhandled exception: " << ex.what() << std::endl;
-        throw;
-        return 1;
-    }
+
+    return 0;
 }
