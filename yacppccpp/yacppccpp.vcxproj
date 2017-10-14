@@ -168,11 +168,9 @@
     <ClInclude Include="fndef.h" />
     <ClInclude Include="function.h" />
     <ClInclude Include="generator.h" />
-    <ClInclude Include="helper.h" />
     <ClInclude Include="lexer.h" />
     <ClInclude Include="parser.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="semantic_validator.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="token.h" />
@@ -185,10 +183,8 @@
     <ClCompile Include="fndef.cpp" />
     <ClCompile Include="function.cpp" />
     <ClCompile Include="generator.cpp" />
-    <ClCompile Include="helper.cpp" />
     <ClCompile Include="lexer.cpp" />
     <ClCompile Include="parser.cpp" />
-    <ClCompile Include="semantic_validator.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

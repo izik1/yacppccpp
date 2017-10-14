@@ -15,7 +15,6 @@
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/IR/Instructions.h"
-#include "helper.h"
 #include "function.h"
 #include <exception>
 #include <cassert>

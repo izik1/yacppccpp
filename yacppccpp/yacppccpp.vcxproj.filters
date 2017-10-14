@@ -13,6 +13,18 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\generation">
+      <UniqueIdentifier>{3d22fa55-94bf-41c0-b752-bc25d5a8c181}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\generation">
+      <UniqueIdentifier>{7f62dc4d-6622-474d-8dca-a564f910fdcc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\parsing">
+      <UniqueIdentifier>{71669360-5f93-45a5-b3c8-8ab8ce4759fd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\parsing">
+      <UniqueIdentifier>{0448b6df-abef-4903-8937-ee702308fcf1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -30,38 +42,32 @@
     <ClInclude Include="lexer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="parser.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="exprtree.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="type.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="semantic_validator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="generator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="helper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="codetype.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="function.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="value.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\generation</Filter>
     </ClInclude>
     <ClInclude Include="fndef.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\generation</Filter>
+    </ClInclude>
+    <ClInclude Include="function.h">
+      <Filter>Header Files\generation</Filter>
+    </ClInclude>
+    <ClInclude Include="generator.h">
+      <Filter>Header Files\generation</Filter>
+    </ClInclude>
+    <ClInclude Include="exprtree.h">
+      <Filter>Header Files\parsing</Filter>
+    </ClInclude>
+    <ClInclude Include="parser.h">
+      <Filter>Header Files\parsing</Filter>
+    </ClInclude>
+    <ClInclude Include="value.h">
+      <Filter>Header Files\generation</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -74,38 +80,32 @@
     <ClCompile Include="lexer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="parser.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="exprtree.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="type.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="semantic_validator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="generator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="helper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="yacppccpp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="codetype.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="function.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="value.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="generator.cpp">
+      <Filter>Source Files\generation</Filter>
     </ClCompile>
     <ClCompile Include="fndef.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\generation</Filter>
+    </ClCompile>
+    <ClCompile Include="function.cpp">
+      <Filter>Source Files\generation</Filter>
+    </ClCompile>
+    <ClCompile Include="codetype.cpp">
+      <Filter>Source Files\generation</Filter>
+    </ClCompile>
+    <ClCompile Include="value.cpp">
+      <Filter>Source Files\generation</Filter>
+    </ClCompile>
+    <ClCompile Include="exprtree.cpp">
+      <Filter>Source Files\parsing</Filter>
+    </ClCompile>
+    <ClCompile Include="parser.cpp">
+      <Filter>Source Files\parsing</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
