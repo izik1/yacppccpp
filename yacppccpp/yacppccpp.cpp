@@ -63,6 +63,7 @@ int main() {
     }
     catch(const unexpected_token_exception& ex) {
         std::cerr << ex.what(str) << std::endl;
+        return 1;
     }
     return 0;
 }
