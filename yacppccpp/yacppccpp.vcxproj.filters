@@ -25,6 +25,12 @@
     <Filter Include="Source Files\parsing">
       <UniqueIdentifier>{0448b6df-abef-4903-8937-ee702308fcf1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\exceptions">
+      <UniqueIdentifier>{353c51ab-b0c0-4598-84be-ffd00876fbda}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\exceptions">
+      <UniqueIdentifier>{e313aacd-ab5d-4a63-a185-8a9217b16df6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -70,9 +76,12 @@
       <Filter>Header Files\generation</Filter>
     </ClInclude>
     <ClInclude Include="compilation_exception.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\exceptions</Filter>
     </ClInclude>
     <ClInclude Include="unexpected_token_exception.h">
+      <Filter>Header Files\exceptions</Filter>
+    </ClInclude>
+    <ClInclude Include="invalid_primary_exception.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -114,9 +123,12 @@
       <Filter>Source Files\parsing</Filter>
     </ClCompile>
     <ClCompile Include="compilation_exception.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\exceptions</Filter>
     </ClCompile>
     <ClCompile Include="unexpected_token_exception.cpp">
+      <Filter>Source Files\exceptions</Filter>
+    </ClCompile>
+    <ClCompile Include="invalid_primary_exception.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

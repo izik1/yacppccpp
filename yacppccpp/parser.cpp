@@ -5,6 +5,7 @@
 #include "exprtree.h"
 #include "parser.h"
 #include "token.h"
+#include "invalid_primary_exception.h"
 
 // larger number = higher precedence.
 std::unordered_map<type, size_t> precedence = {
@@ -109,7 +110,7 @@ std::shared_ptr<exprtree> parser::parsePrimary() {
     }
     default:
         if(isUnaryOp(tok.m_type)) return parseUrnary(tok);
-        else throw std::logic_error("Unexpected token type for primary: " + typeStringMap[tok.m_type]);
+        else throw invalid_primary_exception(tok.m_startPos, tok.m_len, tok.m_type);
     }
 }
 

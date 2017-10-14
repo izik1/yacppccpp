@@ -169,6 +169,7 @@
     <ClInclude Include="fndef.h" />
     <ClInclude Include="function.h" />
     <ClInclude Include="generator.h" />
+    <ClInclude Include="invalid_primary_exception.h" />
     <ClInclude Include="lexer.h" />
     <ClInclude Include="parser.h" />
     <ClInclude Include="resource.h" />
@@ -186,6 +187,7 @@
     <ClCompile Include="fndef.cpp" />
     <ClCompile Include="function.cpp" />
     <ClCompile Include="generator.cpp" />
+    <ClCompile Include="invalid_primary_exception.cpp" />
     <ClCompile Include="lexer.cpp" />
     <ClCompile Include="parser.cpp" />
     <ClCompile Include="stdafx.cpp">

@@ -61,7 +61,7 @@ int main() {
         throw;
         return 1;
     }
-    catch(const unexpected_token_exception& ex) {
+    catch(const compilation_exception& ex) {
         std::cerr << ex.what(str) << std::endl;
         return 1;
     }

@@ -1,7 +1,7 @@
 #pragma once
 #include "compilation_exception.h"
 #include "type.h"
-class unexpected_token_exception : compilation_exception {
+class unexpected_token_exception : public compilation_exception {
 public:
     unexpected_token_exception(type expected, type actual, size_t startPos, size_t length);
     ~unexpected_token_exception();
