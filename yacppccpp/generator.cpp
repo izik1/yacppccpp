@@ -32,7 +32,7 @@ namespace codegen {
     std::shared_ptr<codetype> voidtype(nullptr);
     bool currentBlockContainsReturn = false;
     exprVal voidExpr{voidtype, nullptr};
-    function* activeFn;
+    function* currentlyParsingFunction;
     llvm::Value* unwrap(const exprVal p_val) {
         std::shared_ptr<codetype> type = voidtype;
         llvm::Value* val = nullptr;
@@ -93,7 +93,7 @@ namespace codegen {
 
         case type::keyword_ret:
         {
-            if(activeFn->retType == types.at("void")) {
+            if(currentlyParsingFunction->retType == types.at("void")) {
                 currentBlockContainsReturn = true;
                 assert(tree->subtrees.size() == 0 && "returns in a void function must be empty");
                 builder.CreateRetVoid();
@@ -105,7 +105,7 @@ namespace codegen {
             llvm::Value* val;
             std::tie(type, val) = codeGen(tree->subtrees.at(0));
             currentBlockContainsReturn = true;
-            assert(type == activeFn->retType && "return expression must have the same type as the functions return type.");
+            assert(type == currentlyParsingFunction->retType && "return expression must have the same type as the functions return type.");
             builder.CreateRet(val);
             return voidExpr;
         }
@@ -178,9 +178,9 @@ namespace codegen {
     }
 
     exprVal generator::whileUntilCodeGen(std::shared_ptr<exprtree> expr) {
-        auto loophead = llvm::BasicBlock::Create(context, "loop_head", activeFn->m_function);
-        auto loopbody = llvm::BasicBlock::Create(context, "loop_body", activeFn->m_function);
-        auto looptail = llvm::BasicBlock::Create(context, "loop_tail", activeFn->m_function);
+        auto loophead = llvm::BasicBlock::Create(context, "loop_head", currentlyParsingFunction->m_function);
+        auto loopbody = llvm::BasicBlock::Create(context, "loop_body", currentlyParsingFunction->m_function);
+        auto looptail = llvm::BasicBlock::Create(context, "loop_tail", currentlyParsingFunction->m_function);
         builder.CreateBr(loophead);
         builder.SetInsertPoint(loophead);
         auto condVal = unwrap(codeGen(expr->subtrees.at(0)));
@@ -300,9 +300,9 @@ namespace codegen {
     }
 
     exprVal generator::ifCodeGen(std::shared_ptr<exprtree> tree) {
-        auto br_true = llvm::BasicBlock::Create(context, "if_true", activeFn->m_function);
-        auto br_false = llvm::BasicBlock::Create(context, "if_false", activeFn->m_function);
-        auto br_end = llvm::BasicBlock::Create(context, "if_end", activeFn->m_function);
+        auto br_true = llvm::BasicBlock::Create(context, "if_true", currentlyParsingFunction->m_function);
+        auto br_false = llvm::BasicBlock::Create(context, "if_false", currentlyParsingFunction->m_function);
+        auto br_end = llvm::BasicBlock::Create(context, "if_end", currentlyParsingFunction->m_function);
         builder.CreateCondBr(unwrap(binExprCodeGen(tree->subtrees.at(0))), br_true, br_false);
         builder.SetInsertPoint(br_true);
         codeGen(tree->subtrees.at(1));
@@ -356,6 +356,7 @@ namespace codegen {
                 builder.CreateStore(func.m_fn->m_function->args().begin() + j, NamedValues.at(name).m_value);
             }
 
+            currentlyParsingFunction = func.m_fn->m_function;
             codeGen(func.m_body);
             if(!currentBlockContainsReturn) {
                 if(func.m_fn->retType->m_name == "void") builder.CreateRetVoid();
