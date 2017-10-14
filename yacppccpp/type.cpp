@@ -26,9 +26,13 @@ std::unordered_map<type, std::string> typeStringMap{
     {type::keyword_if,         "if"},
     {type::keyword_else,       "else"},
     {type::keyword_as,         "as"},
+    {type::keyword_ret,        "ret"},
+    {type::keyword_fn,         "fn"},
     {type::keyword_while,      "while"},
     {type::keyword_until,      "until"},
+    {type::fn_header,          "fn_header"},
     {type::colon,              "colon"},
+    {type::comma,              "comma"},
     {type::semicolon,          "semicolon"},
     {type::block,              "block"},
     {type::tilda,              "tilda"},
@@ -59,13 +63,16 @@ std::unordered_map<std::string, type> lexerSymbolMap{
     {";", type::semicolon},
     {"~", type::tilda},
     {"!", type::not},
+    {",", type::comma},
 };
 
 std::unordered_map<std::string, type> lexerKeywordMap{
     {"if", type::keyword_if},
     {"while", type::keyword_while},
     {"until", type::keyword_until},
+    {"return", type::keyword_ret},
     {"let", type::keyword_let},
     {"else", type::keyword_else},
     {"as", type::keyword_as},
+    {"fn", type::keyword_fn},
 };

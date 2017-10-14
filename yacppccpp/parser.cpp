@@ -149,11 +149,46 @@ std::shared_ptr<exprtree> parser::parseStatement() {
         advance().expect(type::curl_bracket_close);
         return tree;
     }
+
+    case type::keyword_fn:
+    {
+        auto tree = std::make_shared<exprtree>(exprtree(advance()));
+        auto fn_header = std::make_shared<exprtree>(exprtree(token(type::fn_header, 0, "", tree->m_tok.m_startPos, 0)));
+        tree->subtrees.push_back(fn_header);
+
+        // return type -- if the next token is an identifier. otherwise identifier.
+        fn_header->subtrees.push_back(parseIdentifier());
+
+        if(peek().m_type == type::identifier) fn_header->subtrees.push_back(parseIdentifier()); // identifier
+
+        advance().expect(type::paren_open); // (i32 x, i8 y);
+        if(peek().m_type == type::identifier) while(parseArgument(fn_header)) advance().expect(type::comma);
+
+        fn_header->m_tok.m_len = token::getCombindedLen(fn_header->m_tok, advance().expect(type::paren_close));
+        advance().expect(type::curl_bracket_open);
+        tree->subtrees.push_back(parseBlock());
+        tree->m_tok.m_len = token::getCombindedLen(tree->m_tok, advance().expect(type::curl_bracket_close));
+        return tree;
+    }
+
+    case type::keyword_ret:
+    {
+        auto tree = std::make_shared<exprtree>(exprtree(advance()));
+        if(isPrimary(peek().m_type))  tree->subtrees.push_back(parseExpression(parsePrimary(), 0));
+        tree->m_tok.m_len = token::getCombindedLen(tree->m_tok, advance().expect(type::semicolon));
+        return tree;
+    }
     default:
         auto tree = parseExpression(parsePrimary(), 0);
         tree->m_tok.m_len = token::getCombindedLen(tree->m_tok, advance().expect(type::semicolon));
         return tree;
     }
+}
+
+bool parser::parseArgument(std::shared_ptr<exprtree> appendTree) {
+    appendTree->subtrees.push_back(parseIdentifier()); // type
+    appendTree->subtrees.push_back(parseIdentifier()); // identifier.
+    return peek().m_type == type::comma;
 }
 
 std::shared_ptr<exprtree> parser::parseBlock() {
@@ -162,11 +197,11 @@ std::shared_ptr<exprtree> parser::parseBlock() {
     while(peek().m_type != type::curl_bracket_close && peek().m_type != type::eof) {
         auto tree = parseStatement();
         if(tree != nullptr) {
-            block->m_tok.m_len = (tree->m_tok.m_startPos - block->m_tok.m_startPos) + tree->m_tok.m_len;
             block->subtrees.push_back(tree);
         }
     }
 
+    block->m_tok.m_len = token::getCombindedLen(block->m_tok, peek());
     return block;
 }
 

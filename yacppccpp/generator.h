@@ -8,7 +8,6 @@
 class codetype;
 namespace llvm {
     class Value;
-    class AllocaInst;
 }
 
 namespace codegen {

@@ -11,6 +11,8 @@ enum class type {
     num,
     eof,
     carrot,
+    comma,
+    fn_header,
     paren_open,
     paren_close,
     greater_than,
@@ -32,8 +34,10 @@ enum class type {
     keyword_let,
     keyword_else,
     keyword_as,
+    keyword_fn,
     keyword_while,
     keyword_until,
+    keyword_ret,
 };
 
 extern std::unordered_map<type, std::string> typeStringMap;
@@ -42,6 +46,17 @@ extern std::unordered_map<std::string, type> lexerKeywordMap;
 
 inline std::string typeToString(const type t) {
     return typeStringMap.at(t);
+}
+
+constexpr bool isPrimary(const type t) {
+    switch(t) {
+    case type::num:
+    case type::identifier:
+    case type::paren_open:
+        return true;
+    default:
+        return false;
+    }
 }
 
 constexpr bool isBinaryOp(const type t) {
