@@ -73,6 +73,25 @@ namespace codegen {
         case type::keyword_while:
         case type::keyword_until:
             return whileUntilCodeGen(tree);
+
+        case type::call:
+        {
+            auto args = std::vector<llvm::Value*>();
+            if(functions.find(tree->subtrees.at(0)->m_tok.m_strval) == functions.end())
+                throw std::logic_error("non-existant function");
+            auto fn = functions.at(tree->subtrees.at(0)->m_tok.m_strval);
+            for(size_t i = 1; i < tree->subtrees.size(); i++) {
+                if(i > fn->m_paramTypes.size()) throw std::logic_error("too many arguments");
+                llvm::Value* val;
+                std::shared_ptr<codetype> type;
+                std::tie(type, val) = codeGen(tree->subtrees.at(i));
+                if(type != fn->m_paramTypes.at(i - 1)) throw std::logic_error("invalid argument type");
+                args.push_back(val);
+            }
+
+            return {fn->retType, builder.CreateCall(fn->m_function, args, fn->retType == types.at("void") ? "" : "calltmp")};
+        }
+
         case type::keyword_ret:
         {
             if(activeFn->retType == types.at("void")) {
@@ -308,23 +327,12 @@ namespace codegen {
     }
 
     exprVal generator::fnCodeGen(std::shared_ptr<exprtree> tree) {
-        currentBlockContainsReturn = false;
-        std::shared_ptr<codetype> retType;
-        std::shared_ptr<exprtree> fn_id;
-        std::shared_ptr<exprtree> fn_args;
-        std::shared_ptr<exprtree> fn_body;
+        auto fn_id = tree->subtrees.at(0);
+        auto fn_args = tree->subtrees.at(1);
+        auto fn_body = tree->subtrees.at(2);
 
-        if(tree->subtrees.size() == 3) {
-            fn_id = tree->subtrees.at(0);
-            fn_args = tree->subtrees.at(1);
-            fn_body = tree->subtrees.at(2);
-            retType = types.at("void");
-        } else {
-            retType = types.at(tree->subtrees.at(0)->m_tok.m_strval);
-            fn_id = tree->subtrees.at(1);
-            fn_args = tree->subtrees.at(2);
-            fn_body = tree->subtrees.at(3);
-        }
+        // Does this function explicitly delcare its return type?
+        auto retType = tree->subtrees.size() == 4 ? types.at(tree->subtrees.at(3)->m_tok.m_strval) : types.at("void");
 
         auto argTypes = std::vector<std::shared_ptr<codetype>>();
         auto argNames = std::vector<std::string>();
@@ -343,12 +351,12 @@ namespace codegen {
         function* fn = new function(argTypes, retType, llvmFn);
         functionCreationStack.push_back(fndef(argTypes, argNames, llvmArgs, fn, fn_body));
         functions.insert(std::make_pair(fn_id->m_tok.m_strval, fn));
-
         return voidExpr;
     }
 
     void generator::createFunctions() {
         for each (auto func in functionCreationStack) {
+            currentBlockContainsReturn = false;
             activeFn = func.m_fn;
             auto bb = llvm::BasicBlock::Create(context, "entry", func.m_fn->m_function);
             builder.SetInsertPoint(bb);

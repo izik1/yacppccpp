@@ -32,9 +32,9 @@ fn i32 main(){               \n\
         j -= 1;              \n\
     }                        \n\
                              \n\
+    tst(i);                  \n\
     return i;                \n\
-    return i;                \n\
-} fn tst(){}";
+} fn tst(i32 a){}";
 
 void printToken(token tok, size_t indent) {
     std::cerr << std::string(indent, ' ') << typeStringMap.at(tok.m_type) << ", " <<

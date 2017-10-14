@@ -102,7 +102,7 @@ std::shared_ptr<exprtree> parser::parsePrimary() {
         auto tree = std::make_shared<exprtree>(exprtree(tok));
         if(peek().m_type == type::paren_open) { // function call?
             auto fnCall = std::make_shared<exprtree>(exprtree(token(type::call, 0, "", tree->m_tok.m_startPos, 0)));
-            fnCall->subtrees.push_back(fnCall);
+            fnCall->subtrees.push_back(tree);
             advance();
             if(peek().m_type != type::paren_close) {
                 do {
@@ -111,8 +111,8 @@ std::shared_ptr<exprtree> parser::parsePrimary() {
                 } while(tok.m_type == type::comma);
 
                 fnCall->m_tok.m_len = token::getCombindedLen(fnCall->m_tok, tok.expect(type::paren_close));
-                return fnCall;
-            }
+            } else advance();
+            return fnCall;
         }
 
         return tree;
@@ -174,10 +174,13 @@ std::shared_ptr<exprtree> parser::parseStatement() {
         auto tree = std::make_shared<exprtree>(exprtree(advance()));
 
         // return type -- if the next token is an identifier. otherwise identifier.
-        tree->subtrees.push_back(parseIdentifier());
+        auto _tree = parseIdentifier();
 
         if(peek().m_type == type::identifier) tree->subtrees.push_back(parseIdentifier()); // identifier
-
+        else {
+            tree->subtrees.push_back(_tree);
+            _tree = nullptr;
+        }
         auto fn_args = std::make_shared<exprtree>(exprtree(token(type::fn_args, 0, "", tree->m_tok.m_startPos, 0)));
         tree->subtrees.push_back(fn_args);
         advance().expect(type::paren_open); // (i32 x, i8 y);
@@ -187,6 +190,7 @@ std::shared_ptr<exprtree> parser::parseStatement() {
         advance().expect(type::curl_bracket_open);
         tree->subtrees.push_back(parseBlock());
         tree->m_tok.m_len = token::getCombindedLen(tree->m_tok, advance().expect(type::curl_bracket_close));
+        if(_tree != nullptr) tree->subtrees.push_back(_tree);
         return tree;
     }
 
