@@ -356,7 +356,7 @@ namespace codegen {
                 builder.CreateStore(func.m_fn->m_function->args().begin() + j, NamedValues.at(name).m_value);
             }
 
-            currentlyParsingFunction = func.m_fn->m_function;
+            currentlyParsingFunction = func.m_fn;
             codeGen(func.m_body);
             if(!currentBlockContainsReturn) {
                 if(func.m_fn->retType->m_name == "void") builder.CreateRetVoid();
