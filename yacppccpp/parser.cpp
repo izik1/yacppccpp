@@ -100,22 +100,7 @@ std::shared_ptr<exprtree> parser::parsePrimary() {
     case type::identifier:
     {
         auto tree = std::make_shared<exprtree>(exprtree(tok));
-        if(peek().m_type == type::paren_open) { // function call?
-            auto fnCall = std::make_shared<exprtree>(exprtree(token(type::call, 0, "", tree->m_tok.m_startPos, 0)));
-            fnCall->subtrees.push_back(tree);
-            advance();
-            if(peek().m_type != type::paren_close) {
-                do {
-                    fnCall->subtrees.push_back(parseExpression(parsePrimary(), 0));
-                    tok = advance();
-                } while(tok.m_type == type::comma);
-
-                fnCall->m_tok.m_len = token::getCombindedLen(fnCall->m_tok, tok.expect(type::paren_close));
-            } else advance();
-            return fnCall;
-        }
-
-        return tree;
+        return peek().m_type == type::paren_open ? parsefnCall(tree) : tree;
     }
     default:
         if(isUnaryOp(tok.m_type)) return parseUrnary(tok);
@@ -123,15 +108,52 @@ std::shared_ptr<exprtree> parser::parsePrimary() {
     }
 }
 
+std::shared_ptr<exprtree> parser::parsefnCall(std::shared_ptr<exprtree> tree) {
+    auto fnCall = std::make_shared<exprtree>(exprtree(token(type::call, 0, "", tree->m_tok.m_startPos, 0)));
+    fnCall->subtrees.push_back(tree);
+    auto tok = advance();
+    if(peek().m_type != type::paren_close) {
+        do {
+            fnCall->subtrees.push_back(parseExpression(parsePrimary(), 0));
+            tok = advance();
+        } while(tok.m_type == type::comma);
+
+        fnCall->m_tok.m_len = token::getCombindedLen(fnCall->m_tok, tok.expect(type::paren_close));
+    } else advance();
+    return fnCall;
+}
+
 parser::parser(std::vector<token>::iterator iterator) {
     m_iterator = iterator;
+}
+
+std::shared_ptr<exprtree> parser::parseFunction() {
+    auto tree = std::make_shared<exprtree>(exprtree(advance()));
+
+    auto _tree = parseIdentifier(); // This is the return type if the next token is an identifier. otherwise it's the name.
+
+    if(peek().m_type == type::identifier) tree->subtrees.push_back(parseIdentifier()); // Name if existant.
+    else {
+        tree->subtrees.push_back(_tree);
+        _tree = nullptr;
+    }
+    auto fn_args = std::make_shared<exprtree>(exprtree(token(type::fn_args, 0, "", tree->m_tok.m_startPos, 0)));
+    tree->subtrees.push_back(fn_args);
+    advance().expect(type::paren_open); // (i32 x, i8 y);
+    if(peek().m_type == type::identifier) while(parseArgument(fn_args)) advance().expect(type::comma);
+
+    fn_args->m_tok.m_len = token::getCombindedLen(fn_args->m_tok, advance().expect(type::paren_close));
+    advance().expect(type::curl_bracket_open);
+    tree->subtrees.push_back(parseBlock());
+    tree->m_tok.m_len = token::getCombindedLen(tree->m_tok, advance().expect(type::curl_bracket_close));
+    if(_tree != nullptr) tree->subtrees.push_back(_tree);
+    return tree;
 }
 
 std::shared_ptr<exprtree> parser::parseStatement() {
     switch(peek().m_type) {
     case type::semicolon:
-        advance();
-        return nullptr;
+        return std::make_shared<exprtree>(exprtree(advance()));
     case type::keyword_let:
         return parseVariable();
     case type::keyword_while:
@@ -146,20 +168,7 @@ std::shared_ptr<exprtree> parser::parseStatement() {
     }
     case type::keyword_if:
     {
-        auto tree = std::make_shared<exprtree>(exprtree(advance()));
-        peek().expect(type::paren_open);
-        tree->subtrees.push_back(parseExpression(parsePrimary(), 0)); // condition.
-        auto brTrue = parseStatement();
-        tree->subtrees.push_back(brTrue);
-        if(peek().m_type == type::keyword_else) {
-            advance();
-            auto brElse = parseStatement();
-            tree->subtrees.push_back(brElse);
-            tree->m_tok.m_len = (brElse->m_tok.m_startPos - tree->m_tok.m_startPos) + brElse->m_tok.m_len;
-        } else {
-            tree->m_tok.m_len = (brTrue->m_tok.m_startPos - tree->m_tok.m_startPos) + brTrue->m_tok.m_len;
-        }
-        return tree;
+        return parseIf();
     }
     case type::curl_bracket_open:
     {
@@ -169,31 +178,7 @@ std::shared_ptr<exprtree> parser::parseStatement() {
         return tree;
     }
 
-    case type::keyword_fn:
-    {
-        auto tree = std::make_shared<exprtree>(exprtree(advance()));
-
-        // return type -- if the next token is an identifier. otherwise identifier.
-        auto _tree = parseIdentifier();
-
-        if(peek().m_type == type::identifier) tree->subtrees.push_back(parseIdentifier()); // identifier
-        else {
-            tree->subtrees.push_back(_tree);
-            _tree = nullptr;
-        }
-        auto fn_args = std::make_shared<exprtree>(exprtree(token(type::fn_args, 0, "", tree->m_tok.m_startPos, 0)));
-        tree->subtrees.push_back(fn_args);
-        advance().expect(type::paren_open); // (i32 x, i8 y);
-        if(peek().m_type == type::identifier) while(parseArgument(fn_args)) advance().expect(type::comma);
-
-        fn_args->m_tok.m_len = token::getCombindedLen(fn_args->m_tok, advance().expect(type::paren_close));
-        advance().expect(type::curl_bracket_open);
-        tree->subtrees.push_back(parseBlock());
-        tree->m_tok.m_len = token::getCombindedLen(tree->m_tok, advance().expect(type::curl_bracket_close));
-        if(_tree != nullptr) tree->subtrees.push_back(_tree);
-        return tree;
-    }
-
+    case type::keyword_fn: return parseFunction();
     case type::keyword_ret:
     {
         auto tree = std::make_shared<exprtree>(exprtree(advance()));
@@ -208,6 +193,22 @@ std::shared_ptr<exprtree> parser::parseStatement() {
     }
 }
 
+std::shared_ptr<exprtree> parser::parseIf() {
+    auto tree = std::make_shared<exprtree>(exprtree(advance()));
+    peek().expect(type::paren_open);
+    tree->subtrees.push_back(parseExpression(parsePrimary(), 0)); // condition.
+    auto brTrue = parseStatement();
+    tree->subtrees.push_back(brTrue);
+    if(peek().m_type == type::keyword_else) {
+        advance();
+        auto brElse = parseStatement();
+        tree->subtrees.push_back(brElse);
+        tree->m_tok.m_len = token::getCombindedLen(tree->m_tok, brElse->m_tok);
+    } else tree->m_tok.m_len = (brTrue->m_tok.m_startPos - tree->m_tok.m_startPos) + brTrue->m_tok.m_len;
+
+    return tree;
+}
+
 bool parser::parseArgument(std::shared_ptr<exprtree> appendTree) {
     appendTree->subtrees.push_back(parseIdentifier()); // type
     appendTree->subtrees.push_back(parseIdentifier()); // identifier.
@@ -219,9 +220,7 @@ std::shared_ptr<exprtree> parser::parseBlock() {
 
     while(peek().m_type != type::curl_bracket_close && peek().m_type != type::eof) {
         auto tree = parseStatement();
-        if(tree != nullptr) {
-            block->subtrees.push_back(tree);
-        }
+        if(tree != nullptr) block->subtrees.push_back(tree);
     }
 
     block->m_tok.m_len = token::getCombindedLen(block->m_tok, peek());

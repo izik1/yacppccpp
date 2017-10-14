@@ -16,11 +16,14 @@ private:
     token advance();
     token current();
     std::shared_ptr<exprtree> parseUrnary(const token &tok);
+    std::shared_ptr<exprtree> parseFunction();
     std::shared_ptr<exprtree> parseStatement();
+    std::shared_ptr<exprtree> parseIf();
     std::shared_ptr<exprtree> parseIdentifier();
     std::shared_ptr<exprtree> parseBlock();
     bool parseArgument(std::shared_ptr<exprtree> appendTree);
     std::shared_ptr<exprtree> parseVariable();
     std::shared_ptr<exprtree> parseExpression(std::shared_ptr<exprtree> lhs, size_t minPrecidence);
     std::shared_ptr<exprtree> parsePrimary();
+    std::shared_ptr<exprtree> parsefnCall(std::shared_ptr<exprtree> tree);
 };

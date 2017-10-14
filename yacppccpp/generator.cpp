@@ -45,13 +45,13 @@ namespace codegen {
     llvm::IRBuilder<> builder(context);
 
     exprVal generator::codeGen(std::shared_ptr<exprtree> tree) {
-        if(currentBlockContainsReturn) {
-            return voidExpr; // dead code.
-        }
+        if(currentBlockContainsReturn) return voidExpr; // all the code past here is dead.
 
         if(isBinaryOp(tree->m_tok.m_type) && tree->subtrees.size() == 2) return binExprCodeGen(tree);
         if(isUnaryOp(tree->m_tok.m_type) && tree->subtrees.size() == 1) return unaryExprCodeGen(tree);
         switch(tree->m_tok.m_type) {
+        case type::semicolon:
+            return voidExpr;
         case type::keyword_let: return letCodeGen(tree);
         case type::num: return {types.at("i32"), builder.getInt32(tree->m_tok.m_value)};
         case type::identifier:
@@ -117,9 +117,7 @@ namespace codegen {
     }
 
     exprVal generator::unaryExprCodeGen(std::shared_ptr<exprtree> expr) {
-        if(expr->m_tok.m_type == type::plus) {
-            throw std::logic_error("unary plus is invalid");
-        }
+        if(expr->m_tok.m_type == type::plus) throw std::logic_error("unary plus is invalid");
 
         std::shared_ptr<codetype> type;
         llvm::Value* val;
@@ -160,9 +158,8 @@ namespace codegen {
         llvm::Value* lhs_value;
         std::tie(lhs_type, lhs_value) = codeGen(expr->subtrees.at(0));
         auto rhs_type = types.at(expr->subtrees.at(1)->m_tok.m_strval);
-        if(!lhs_type->isPrimitive() || !rhs_type->isPrimitive()) {
+        if(!lhs_type->isPrimitive() || !rhs_type->isPrimitive())
             return {rhs_type, builder.CreateCall(lhs_type->casts.at(rhs_type), lhs_value, "calltmp")};
-        }
 
         switch(rhs_type->m_defType) {
         case defType::primSInt:
@@ -188,8 +185,7 @@ namespace codegen {
         builder.CreateBr(loophead);
         builder.SetInsertPoint(loophead);
         auto condVal = unwrap(codeGen(expr->subtrees.at(0)));
-        if(expr->m_tok.m_type == type::keyword_while)
-            builder.CreateCondBr(condVal, loopbody, looptail);
+        if(expr->m_tok.m_type == type::keyword_while) builder.CreateCondBr(condVal, loopbody, looptail);
         else builder.CreateCondBr(condVal, looptail, loopbody);
 
         builder.SetInsertPoint(loopbody);
@@ -272,7 +268,6 @@ namespace codegen {
         auto lhs = expr->subtrees.at(0)->m_tok;
 
         if(lhs.m_type != type::identifier) throw std::logic_error("expected identifier on lhs of assignment");
-
         if(NamedValues.find(lhs.m_strval) == NamedValues.end()) throw std::logic_error("undefined indentifier on lhs of assignment");
 
         auto lhs_type = NamedValues.at(lhs.m_strval).m_type;
@@ -282,12 +277,11 @@ namespace codegen {
         std::tie(rhs_type, rhs_value) = codeGen(expr->subtrees.at(1));
 
         if(rhs_type == nullptr) throw std::logic_error("rhs of assignment cannot be void.");
-
         if(rhs_type->m_name != lhs_type->m_name) throw std::logic_error("rhs of assignment must be the same type as the lhs.");
 
         if(t != type::equals) {
-            auto load = builder.CreateLoad(NamedValues.at(lhs.m_strval).m_value, lhs.m_strval);
-            std::tie(rhs_type, rhs_value) = binExprCodeGen({lhs_type, (llvm::Value*)load}, {rhs_type, rhs_value}, t);
+            llvm::Value* load = builder.CreateLoad(NamedValues.at(lhs.m_strval).m_value, lhs.m_strval);
+            std::tie(rhs_type, rhs_value) = binExprCodeGen({lhs_type, load}, {rhs_type, rhs_value}, t);
         }
 
         builder.CreateStore(rhs_value, NamedValues.at(lhs.m_strval).m_value);
@@ -297,15 +291,11 @@ namespace codegen {
     exprVal generator::letCodeGen(std::shared_ptr<exprtree> expr) {
         auto typeName = expr->subtrees.at(0)->m_tok.m_strval;
         assert(types.find(typeName) != types.end() && "Undefined type"); // assert the type exists.
-        llvm::Type* type = types.at(typeName)->getLlvmType();
 
-        llvm::Value* val = nullptr;
         auto id = expr->subtrees.at(1)->m_tok.m_strval;
-        auto alloc = builder.CreateAlloca(type, nullptr, id);
+        auto alloc = builder.CreateAlloca(types.at(typeName)->getLlvmType(), nullptr, id);
         NamedValues.insert(std::make_pair(id, codegen::value(alloc, id, types.at(typeName))));
-        if(expr->subtrees.size() == 3) {
-            codeGen(expr->subtrees.at(2));
-        }
+        if(expr->subtrees.size() == 3) codeGen(expr->subtrees.at(2));
 
         return voidExpr;
     }
@@ -355,37 +345,33 @@ namespace codegen {
     }
 
     void generator::createFunctions() {
-        for each (auto func in functionCreationStack) {
+        for(size_t i = functionCreationStack.size(); i > 0; i--) {
+            auto func = functionCreationStack.at(i - 1);
             currentBlockContainsReturn = false;
-            activeFn = func.m_fn;
-            auto bb = llvm::BasicBlock::Create(context, "entry", func.m_fn->m_function);
-            builder.SetInsertPoint(bb);
+            builder.SetInsertPoint(llvm::BasicBlock::Create(context, "entry", func.m_fn->m_function));
             valueStack.push_back(NamedValues);
-            for(size_t i = 0; i < func.m_argNames.size(); i++) {
-                auto name = func.m_argNames.at(i);
-
-                NamedValues.insert(std::make_pair(name,
-                    value(builder.CreateAlloca(func.m_argTypes.at(i)->getLlvmType(), nullptr, name), name, func.m_argTypes.at(i))));
-                builder.CreateStore(func.m_fn->m_function->args().begin() + i, NamedValues.at(name).m_value);
+            for(size_t j = 0; j < func.m_argNames.size(); j++) {
+                auto name = func.m_argNames.at(j);
+                auto type = func.m_argTypes.at(j);
+                NamedValues.insert(std::make_pair(name, value(builder.CreateAlloca(type->getLlvmType(), nullptr, name), name, type)));
+                builder.CreateStore(func.m_fn->m_function->args().begin() + j, NamedValues.at(name).m_value);
             }
 
             codeGen(func.m_body);
             if(!currentBlockContainsReturn) {
                 if(func.m_fn->retType->m_name == "void") builder.CreateRetVoid();
-                throw std::logic_error("Missing return at end of non-void function");
+                else throw std::logic_error("Missing return at end of non-void function");
             }
 
             NamedValues = valueStack.at(valueStack.size() - 1);
             valueStack.pop_back();
 
-            return;
+            functionCreationStack.pop_back();
         }
     }
 
     void generator::generate(std::shared_ptr<exprtree> tree) {
-        for each (auto sub in tree->subtrees) {
-            codeGen(sub);
-        }
+        for each (auto sub in tree->subtrees) codeGen(sub);
 
         createFunctions();
         llvm::errs() << "\n";
