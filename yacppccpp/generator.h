@@ -5,6 +5,7 @@
 #include "llvm/IR/Module.h"
 #include <unordered_map>
 #include "value.h"
+#include "fndef.h"
 class codetype;
 namespace llvm {
     class Value;
@@ -19,6 +20,8 @@ namespace codegen {
     private:
         typedef std::unordered_map<std::string, codegen::value> valuemap_t;
         valuemap_t NamedValues;
+        std::unordered_map<std::string, function*> functions;
+        std::vector<fndef> functionCreationStack;
         std::vector<valuemap_t> valueStack;
         std::unordered_map<std::string, std::shared_ptr<codetype>> types;
         void generatePrimitives();
@@ -32,6 +35,7 @@ namespace codegen {
         exprVal letCodeGen(std::shared_ptr<exprtree> expr);
         exprVal ifCodeGen(std::shared_ptr<exprtree> tree);
         exprVal fnCodeGen(std::shared_ptr<exprtree> tree);
+        void createFunctions();
         exprVal assignCodeGen(std::shared_ptr<exprtree> expr, const type t);
     };
 }

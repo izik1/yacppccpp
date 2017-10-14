@@ -341,28 +341,37 @@ namespace codegen {
         llvm::Function* llvmFn = llvm::Function::Create(
             llvmfnTy, llvm::GlobalValue::LinkageTypes::ExternalLinkage, fn_id->m_tok.m_strval, mod.get());
         function* fn = new function(argTypes, retType, llvmFn);
-        activeFn = fn;
-        auto bb = llvm::BasicBlock::Create(context, "entry", llvmFn);
-        builder.SetInsertPoint(bb);
-        valueStack.push_back(NamedValues);
-        for(size_t i = 0; i < argNames.size(); i++) {
-            auto name = argNames.at(i);
-
-            NamedValues.insert(std::make_pair(name,
-                value(builder.CreateAlloca(argTypes.at(i)->getLlvmType(), nullptr, name), name, argTypes.at(i))));
-            builder.CreateStore(llvmFn->args().begin() + i, NamedValues.at(name).m_value);
-        }
-
-        codeGen(fn_body);
-        if(!currentBlockContainsReturn) {
-            if(retType->m_name == "void") builder.CreateRetVoid();
-            throw std::logic_error("Missing return at end of non-void function");
-        }
-
-        NamedValues = valueStack.at(valueStack.size() - 1);
-        valueStack.pop_back();
+        functionCreationStack.push_back(fndef(argTypes, argNames, llvmArgs, fn, fn_body));
+        functions.insert(std::make_pair(fn_id->m_tok.m_strval, fn));
 
         return voidExpr;
+    }
+
+    void generator::createFunctions() {
+        for each (auto func in functionCreationStack) {
+            activeFn = func.m_fn;
+            auto bb = llvm::BasicBlock::Create(context, "entry", func.m_fn->m_function);
+            builder.SetInsertPoint(bb);
+            valueStack.push_back(NamedValues);
+            for(size_t i = 0; i < func.m_argNames.size(); i++) {
+                auto name = func.m_argNames.at(i);
+
+                NamedValues.insert(std::make_pair(name,
+                    value(builder.CreateAlloca(func.m_argTypes.at(i)->getLlvmType(), nullptr, name), name, func.m_argTypes.at(i))));
+                builder.CreateStore(func.m_fn->m_function->args().begin() + i, NamedValues.at(name).m_value);
+            }
+
+            codeGen(func.m_body);
+            if(!currentBlockContainsReturn) {
+                if(func.m_fn->retType->m_name == "void") builder.CreateRetVoid();
+                throw std::logic_error("Missing return at end of non-void function");
+            }
+
+            NamedValues = valueStack.at(valueStack.size() - 1);
+            valueStack.pop_back();
+
+            return;
+        }
     }
 
     void generator::generate(std::shared_ptr<exprtree> tree) {
@@ -370,6 +379,7 @@ namespace codegen {
             codeGen(sub);
         }
 
+        createFunctions();
         llvm::errs() << "\n";
         llvm::verifyModule(*mod.get(), &llvm::errs());
 
@@ -390,7 +400,7 @@ namespace codegen {
             codetype(llvm::Type::getVoidTy(context), "void", defType::primSpec))));
     }
 
-    generator::generator() : NamedValues(), types(), valueStack() {
+    generator::generator() : NamedValues(), types(), valueStack(), functions(), functionCreationStack() {
         mod = llvm::make_unique<llvm::Module>("yacppccpp", context);
         generatePrimitives();
     }

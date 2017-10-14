@@ -30,6 +30,7 @@ enum class type {
     block,
     tilda,
     not,
+    call,
     keyword_if, // cpp has keywords too so I can't just type "if"
     keyword_let,
     keyword_else,

@@ -97,7 +97,26 @@ std::shared_ptr<exprtree> parser::parsePrimary() {
         return tree;
     }
 
-    case type::identifier: return std::make_shared<exprtree>(exprtree(tok));
+    case type::identifier:
+    {
+        auto tree = std::make_shared<exprtree>(exprtree(tok));
+        if(peek().m_type == type::paren_open) { // function call?
+            auto fnCall = std::make_shared<exprtree>(exprtree(token(type::call, 0, "", tree->m_tok.m_startPos, 0)));
+            fnCall->subtrees.push_back(fnCall);
+            advance();
+            if(peek().m_type != type::paren_close) {
+                do {
+                    fnCall->subtrees.push_back(parseExpression(parsePrimary(), 0));
+                    tok = advance();
+                } while(tok.m_type == type::comma);
+
+                fnCall->m_tok.m_len = token::getCombindedLen(fnCall->m_tok, tok.expect(type::paren_close));
+                return fnCall;
+            }
+        }
+
+        return tree;
+    }
     default:
         if(isUnaryOp(tok.m_type)) return parseUrnary(tok);
         else throw std::logic_error("Unexpected token type for primary: " + typeStringMap[tok.m_type]);

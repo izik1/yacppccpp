@@ -18,6 +18,7 @@ std::unordered_map<type, std::string> typeStringMap{
     {type::equals_equals,      "equals_equals"},
     {type::not_equals,         "equals_equals"},
     {type::not,                "not"},
+    {type::call,               "call"},
     {type::plus_equals,        "plus_equals"},
     {type::astrisk_equals,     "astrisk_equals"},
     {type::slash_equals,       "slash_equals"},
