@@ -117,6 +117,7 @@ namespace codegen {
         if(currentlyParsingFunction->retType == types.at("void")) {
             assert(tree->subtrees.size() == 0 && "returns in a void function must be empty");
             builder.CreateRetVoid();
+            return;
         }
 
         assert(tree->subtrees.size() == 1 && "returns in a non void function must not be empty");
@@ -213,7 +214,8 @@ namespace codegen {
 
         builder.SetInsertPoint(loopbody);
         codeGen(expr->subtrees.at(1));
-        builder.CreateBr(loophead);
+        if(currentBlockContainsReturn) currentBlockContainsReturn = false;
+        else builder.CreateBr(loophead);
 
         builder.SetInsertPoint(looptail);
         return voidExpr;
@@ -327,11 +329,12 @@ namespace codegen {
 
         builder.SetInsertPoint(br_true);
         codeGen(tree->subtrees.at(1));
-        builder.CreateBr(br_end);
-
+        if(currentBlockContainsReturn) currentBlockContainsReturn = false;
+        else builder.CreateBr(br_end);
         builder.SetInsertPoint(br_false);
         if(tree->subtrees.size() == 3) codeGen(tree->subtrees.at(2));
-        builder.CreateBr(br_end);
+        if(currentBlockContainsReturn) currentBlockContainsReturn = false;
+        else builder.CreateBr(br_end);
 
         builder.SetInsertPoint(br_end);
         return voidExpr;
@@ -389,7 +392,7 @@ namespace codegen {
 
             codeGen(func.m_body);
 
-            if(!currentBlockContainsReturn) { // FIXME: else and loops create basic blocks, but don't update this variable.
+            if(!currentBlockContainsReturn) {
                 if(func.m_fn->retType->m_name == "void") builder.CreateRetVoid();
                 else throw std::logic_error("Missing return at end of non-void function");
             }
