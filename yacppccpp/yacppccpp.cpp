@@ -43,20 +43,13 @@ void printToken(token tok, size_t indent) {
 
 void printTree(std::shared_ptr<exprtree> tree, size_t depth) {
     printToken(tree->m_tok, depth);
-    for each (auto subtree in tree->subtrees) {
-        printTree(subtree, depth + 1);
-    }
+
+    for each (auto subtree in tree->subtrees) printTree(subtree, depth + 1);
 }
 
 int main() {
     try {
         auto toks = lexer::lex(str);
-        for each (auto tok in toks) {
-
-            // printToken(tok, 0);
-        }
-
-        //std::cerr << std::endl;
         auto tree = parser::parse(toks.begin());
 
         printTree(tree, 0);

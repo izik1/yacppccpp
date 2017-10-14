@@ -15,9 +15,8 @@ function* codetype::lookupOp(type t, std::vector<std::shared_ptr<codetype>> args
         type fn_t;
         function* fn;
         std::tie(fn_t, fn) = tuple;
-        if(fn_t == t && fn->m_paramTypes == args) {
-            return fn;
-        }
+
+        if(fn_t == t && fn->m_paramTypes == args) return fn;
     }
 
     return nullptr;

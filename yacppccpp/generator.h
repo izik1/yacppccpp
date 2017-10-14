@@ -27,6 +27,8 @@ namespace codegen {
         void generatePrimitives();
         std::unique_ptr<llvm::Module> mod;
         exprVal codeGen(std::shared_ptr<exprtree> tree);
+        exprVal generateCall(std::shared_ptr<exprtree> tree);
+        void generateReturn(std::shared_ptr<exprtree> tree);
         exprVal asCodeGen(std::shared_ptr<exprtree> &expr);
         exprVal whileUntilCodeGen(std::shared_ptr<exprtree> expr);
         exprVal binExprCodeGen(std::shared_ptr<exprtree> expr);

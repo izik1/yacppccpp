@@ -62,14 +62,17 @@ std::shared_ptr<exprtree> parser::parseExpression(std::shared_ptr<exprtree> lhs,
     while(isBinaryOp(lookahead.m_type) && precedence.at(lookahead.m_type) >= minPrecidence) {
         auto op = lookahead;
         advance();
+
         auto rhs = parsePrimary();
         lookahead = peek();
+
         while(isBinaryOp(lookahead.m_type) && precidenceCompare(lookahead, op)) {
             rhs = parseExpression(rhs, precedence.at(lookahead.m_type));
             lookahead = peek();
         }
 
         auto opToken = token(op.m_type, 0, "", lhs->m_tok.m_startPos, token::getCombindedLen(lhs->m_tok, rhs->m_tok));
+
         auto tree = std::make_shared<exprtree>(exprtree(opToken));
         tree->subtrees.push_back(lhs);
         tree->subtrees.push_back(rhs);
@@ -88,12 +91,14 @@ std::shared_ptr<exprtree> parser::parseUrnary(const token &tok) {
 std::shared_ptr<exprtree> parser::parsePrimary() {
     auto tok = advance();
     switch(tok.m_type) {
-    case type::num:
-        return std::make_shared<exprtree>(exprtree(tok));
+    case type::num: return std::make_shared<exprtree>(exprtree(tok));
+
     case type::paren_open:
     {
         auto tree = parseExpression(parsePrimary(), 0);
+
         advance().expect(type::paren_close);
+
         return tree;
     }
 
@@ -111,7 +116,9 @@ std::shared_ptr<exprtree> parser::parsePrimary() {
 std::shared_ptr<exprtree> parser::parsefnCall(std::shared_ptr<exprtree> tree) {
     auto fnCall = std::make_shared<exprtree>(exprtree(token(type::call, 0, "", tree->m_tok.m_startPos, 0)));
     fnCall->subtrees.push_back(tree);
+
     auto tok = advance();
+
     if(peek().m_type != type::paren_close) {
         do {
             fnCall->subtrees.push_back(parseExpression(parsePrimary(), 0));
@@ -120,6 +127,7 @@ std::shared_ptr<exprtree> parser::parsefnCall(std::shared_ptr<exprtree> tree) {
 
         fnCall->m_tok.m_len = token::getCombindedLen(fnCall->m_tok, tok.expect(type::paren_close));
     } else advance();
+
     return fnCall;
 }
 
@@ -137,39 +145,42 @@ std::shared_ptr<exprtree> parser::parseFunction() {
         tree->subtrees.push_back(_tree);
         _tree = nullptr;
     }
+
     auto fn_args = std::make_shared<exprtree>(exprtree(token(type::fn_args, 0, "", tree->m_tok.m_startPos, 0)));
     tree->subtrees.push_back(fn_args);
-    advance().expect(type::paren_open); // (i32 x, i8 y);
+
+    advance().expect(type::paren_open);
     if(peek().m_type == type::identifier) while(parseArgument(fn_args)) advance().expect(type::comma);
 
     fn_args->m_tok.m_len = token::getCombindedLen(fn_args->m_tok, advance().expect(type::paren_close));
     advance().expect(type::curl_bracket_open);
+
     tree->subtrees.push_back(parseBlock());
     tree->m_tok.m_len = token::getCombindedLen(tree->m_tok, advance().expect(type::curl_bracket_close));
+
     if(_tree != nullptr) tree->subtrees.push_back(_tree);
     return tree;
 }
 
 std::shared_ptr<exprtree> parser::parseStatement() {
     switch(peek().m_type) {
-    case type::semicolon:
-        return std::make_shared<exprtree>(exprtree(advance()));
-    case type::keyword_let:
-        return parseVariable();
+    case type::semicolon: return std::make_shared<exprtree>(exprtree(advance()));
+    case type::keyword_let: return parseVariable();
+
     case type::keyword_while:
     case type::keyword_until:
     {
         auto tree = std::make_shared<exprtree>(exprtree(advance()));
         peek().expect(type::paren_open);
+
         tree->subtrees.push_back(parseExpression(parsePrimary(), 0)); // condition.
         tree->subtrees.push_back(parseStatement());
 
         return tree;
     }
-    case type::keyword_if:
-    {
-        return parseIf();
-    }
+
+    case type::keyword_if: return parseIf();
+
     case type::curl_bracket_open:
     {
         advance();
@@ -179,6 +190,7 @@ std::shared_ptr<exprtree> parser::parseStatement() {
     }
 
     case type::keyword_fn: return parseFunction();
+
     case type::keyword_ret:
     {
         auto tree = std::make_shared<exprtree>(exprtree(advance()));
@@ -196,12 +208,17 @@ std::shared_ptr<exprtree> parser::parseStatement() {
 std::shared_ptr<exprtree> parser::parseIf() {
     auto tree = std::make_shared<exprtree>(exprtree(advance()));
     peek().expect(type::paren_open);
+
     tree->subtrees.push_back(parseExpression(parsePrimary(), 0)); // condition.
     auto brTrue = parseStatement();
+
     tree->subtrees.push_back(brTrue);
+
     if(peek().m_type == type::keyword_else) {
         advance();
+
         auto brElse = parseStatement();
+
         tree->subtrees.push_back(brElse);
         tree->m_tok.m_len = token::getCombindedLen(tree->m_tok, brElse->m_tok);
     } else tree->m_tok.m_len = (brTrue->m_tok.m_startPos - tree->m_tok.m_startPos) + brTrue->m_tok.m_len;
@@ -212,6 +229,7 @@ std::shared_ptr<exprtree> parser::parseIf() {
 bool parser::parseArgument(std::shared_ptr<exprtree> appendTree) {
     appendTree->subtrees.push_back(parseIdentifier()); // type
     appendTree->subtrees.push_back(parseIdentifier()); // identifier.
+
     return peek().m_type == type::comma;
 }
 
@@ -224,6 +242,7 @@ std::shared_ptr<exprtree> parser::parseBlock() {
     }
 
     block->m_tok.m_len = token::getCombindedLen(block->m_tok, peek());
+
     return block;
 }
 
@@ -234,11 +253,16 @@ std::shared_ptr<exprtree> parser::parseIdentifier() {
 std::shared_ptr<exprtree> parser::parseVariable() {
     auto tree = std::make_shared<exprtree>(exprtree(advance().expect(type::keyword_let)));
     tree->subtrees.push_back(parseIdentifier()); // type
+
     advance().expect(type::colon);
+
     auto id = parseIdentifier();
     tree->subtrees.push_back(id);
+
     if(peek().m_type == type::equals) tree->subtrees.push_back(parseExpression(id, 0));
+
     tree->m_tok.m_len = token::getCombindedLen(tree->m_tok, advance().expect(type::semicolon));
+
     return tree;
 }
 
@@ -248,6 +272,8 @@ std::shared_ptr<exprtree> parser::parse(std::vector<token>::iterator iterator) {
 
 std::shared_ptr<exprtree> parser::parse() {
     auto tree = parseBlock();
+
     peek().expect(type::eof); // parseBlock() potentally stops on a '}'.
+
     return tree;
 }
