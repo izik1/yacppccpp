@@ -31,7 +31,7 @@ namespace codegen {
     auto bool_t = llvm::Type::getInt1Ty(context);
 
     std::shared_ptr<codetype> voidtype(nullptr);
-
+    bool currentBlockContainsReturn = false;
     exprVal voidExpr{voidtype, nullptr};
     function* activeFn;
     llvm::Value* unwrap(const exprVal p_val) {
@@ -45,6 +45,10 @@ namespace codegen {
     llvm::IRBuilder<> builder(context);
 
     exprVal generator::codeGen(std::shared_ptr<exprtree> tree) {
+        if(currentBlockContainsReturn) {
+            return voidExpr; // dead code.
+        }
+
         if(isBinaryOp(tree->m_tok.m_type) && tree->subtrees.size() == 2) return binExprCodeGen(tree);
         if(isUnaryOp(tree->m_tok.m_type) && tree->subtrees.size() == 1) return unaryExprCodeGen(tree);
         switch(tree->m_tok.m_type) {
@@ -72,6 +76,7 @@ namespace codegen {
         case type::keyword_ret:
         {
             if(activeFn->retType == types.at("void")) {
+                currentBlockContainsReturn = true;
                 assert(tree->subtrees.size() == 0 && "returns in a void function must be empty");
                 builder.CreateRetVoid();
                 return voidExpr;
@@ -81,6 +86,7 @@ namespace codegen {
             std::shared_ptr<codetype> type;
             llvm::Value* val;
             std::tie(type, val) = codeGen(tree->subtrees.at(0));
+            currentBlockContainsReturn = true;
             assert(type == activeFn->retType && "return expression must have the same type as the functions return type.");
             builder.CreateRet(val);
             return voidExpr;
@@ -302,6 +308,7 @@ namespace codegen {
     }
 
     exprVal generator::fnCodeGen(std::shared_ptr<exprtree> tree) {
+        currentBlockContainsReturn = false;
         std::shared_ptr<codetype> retType;
         std::shared_ptr<exprtree> fn_id;
         std::shared_ptr<exprtree> fn_args;
@@ -347,6 +354,11 @@ namespace codegen {
         }
 
         codeGen(fn_body);
+        if(!currentBlockContainsReturn) {
+            if(retType->m_name == "void") builder.CreateRetVoid();
+            throw std::logic_error("Missing return at end of non-void function");
+        }
+
         NamedValues = valueStack.at(valueStack.size() - 1);
         valueStack.pop_back();
 
