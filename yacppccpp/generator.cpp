@@ -33,7 +33,7 @@ namespace codegen {
     std::shared_ptr<codetype> voidtype(nullptr);
 
     exprVal voidExpr{voidtype, nullptr};
-
+    function* activeFn;
     llvm::Value* unwrap(const exprVal p_val) {
         std::shared_ptr<codetype> type = voidtype;
         llvm::Value* val = nullptr;
@@ -51,23 +51,43 @@ namespace codegen {
         case type::keyword_let: return letCodeGen(tree);
         case type::num: return {types.at("i32"), builder.getInt32(tree->m_tok.m_value)};
         case type::identifier:
-            if(NamedValues.find(tree->m_tok.m_strval) == NamedValues.end()) throw std::logic_error("undefined indentifier");
-            else return {NamedValues.at(tree->m_tok.m_strval).m_type, builder.CreateLoad(NamedValues.at(tree->m_tok.m_strval).m_value)};
+            if(NamedValues.find(tree->m_tok.m_strval) == NamedValues.end()) {
+                assert(false && "undefined identifier");
+                throw std::logic_error("undefined identifier");
+            } else return {NamedValues.at(tree->m_tok.m_strval).m_type, builder.CreateLoad(NamedValues.at(tree->m_tok.m_strval).m_value)};
         case type::keyword_if:
             return ifCodeGen(tree);
         case type::block:
             valueStack.push_back(NamedValues);
-            for each (auto sub in tree->subtrees) {
-                codeGen(sub);
-            }
-
+            for each (auto sub in tree->subtrees) codeGen(sub);
             NamedValues = valueStack.at(valueStack.size() - 1);
             valueStack.pop_back();
+            return voidExpr;
+        case type::keyword_fn:
+            fnCodeGen(tree);
             return voidExpr;
         case type::keyword_while:
         case type::keyword_until:
             return whileUntilCodeGen(tree);
-        default: throw std::logic_error("unexpected op");
+        case type::keyword_ret:
+        {
+            if(activeFn->retType == types.at("void")) {
+                assert(tree->subtrees.size() == 0 && "returns in a void function must be empty");
+                builder.CreateRetVoid();
+                return voidExpr;
+            }
+
+            assert(tree->subtrees.size() == 1 && "returns in a non void function must not be empty");
+            std::shared_ptr<codetype> type;
+            llvm::Value* val;
+            std::tie(type, val) = codeGen(tree->subtrees.at(0));
+            assert(type == activeFn->retType && "return expression must have the same type as the functions return type.");
+            builder.CreateRet(val);
+            return voidExpr;
+        }
+        default:
+            assert(false && "unexpected op");
+            throw std::logic_error("unexpected op");
         }
     }
 
@@ -137,9 +157,9 @@ namespace codegen {
     }
 
     exprVal generator::whileUntilCodeGen(std::shared_ptr<exprtree> expr) {
-        auto loophead = llvm::BasicBlock::Create(context, "loop_head", llvmmain);
-        auto loopbody = llvm::BasicBlock::Create(context, "loop_body", llvmmain);
-        auto looptail = llvm::BasicBlock::Create(context, "loop_tail", llvmmain);
+        auto loophead = llvm::BasicBlock::Create(context, "loop_head", activeFn->m_function);
+        auto loopbody = llvm::BasicBlock::Create(context, "loop_body", activeFn->m_function);
+        auto looptail = llvm::BasicBlock::Create(context, "loop_tail", activeFn->m_function);
         builder.CreateBr(loophead);
         builder.SetInsertPoint(loophead);
         auto condVal = unwrap(codeGen(expr->subtrees.at(0)));
@@ -252,12 +272,7 @@ namespace codegen {
     exprVal generator::letCodeGen(std::shared_ptr<exprtree> expr) {
         auto typeName = expr->subtrees.at(0)->m_tok.m_strval;
         assert(types.find(typeName) != types.end() && "Undefined type"); // assert the type exists.
-        llvm::Type* type;
-        if(typeName == "i32") {
-            type = undef_sign_32b_t;
-        } else {
-            type = undef_sign_8b_t;
-        }
+        llvm::Type* type = types.at(typeName)->getLlvmType();
 
         llvm::Value* val = nullptr;
         auto id = expr->subtrees.at(1)->m_tok.m_strval;
@@ -271,9 +286,9 @@ namespace codegen {
     }
 
     exprVal generator::ifCodeGen(std::shared_ptr<exprtree> tree) {
-        auto br_true = llvm::BasicBlock::Create(context, "if_true", llvmmain);
-        auto br_false = llvm::BasicBlock::Create(context, "if_false", llvmmain);
-        auto br_end = llvm::BasicBlock::Create(context, "if_end", llvmmain);
+        auto br_true = llvm::BasicBlock::Create(context, "if_true", activeFn->m_function);
+        auto br_false = llvm::BasicBlock::Create(context, "if_false", activeFn->m_function);
+        auto br_end = llvm::BasicBlock::Create(context, "if_end", activeFn->m_function);
         builder.CreateCondBr(unwrap(binExprCodeGen(tree->subtrees.at(0))), br_true, br_false);
         builder.SetInsertPoint(br_true);
         codeGen(tree->subtrees.at(1));
@@ -286,14 +301,63 @@ namespace codegen {
         return voidExpr;
     }
 
-    void generator::generate(std::shared_ptr<exprtree> tree) {
-        auto bb = llvm::BasicBlock::Create(context, "entry", llvmmain);
+    exprVal generator::fnCodeGen(std::shared_ptr<exprtree> tree) {
+        std::shared_ptr<codetype> retType;
+        std::shared_ptr<exprtree> fn_id;
+        std::shared_ptr<exprtree> fn_args;
+        std::shared_ptr<exprtree> fn_body;
+
+        if(tree->subtrees.size() == 3) {
+            fn_id = tree->subtrees.at(0);
+            fn_args = tree->subtrees.at(1);
+            fn_body = tree->subtrees.at(2);
+            retType = types.at("void");
+        } else {
+            retType = types.at(tree->subtrees.at(0)->m_tok.m_strval);
+            fn_id = tree->subtrees.at(1);
+            fn_args = tree->subtrees.at(2);
+            fn_body = tree->subtrees.at(3);
+        }
+
+        auto argTypes = std::vector<std::shared_ptr<codetype>>();
+        auto argNames = std::vector<std::string>();
+        auto llvmArgs = std::vector<llvm::Type*>();
+        assert(fn_args->subtrees.size() % 2 == 0);
+        for(size_t i = 0; i < fn_args->subtrees.size() / 2; i++) {
+            auto ty = types.at(fn_args->subtrees.at(i * 2)->m_tok.m_strval);
+            argTypes.push_back(ty);
+            argNames.push_back(fn_args->subtrees.at(i * 2 + 1)->m_tok.m_strval);
+            llvmArgs.push_back(ty->getLlvmType());
+        }
+
+        auto llvmfnTy = llvm::FunctionType::get(retType->getLlvmType(), llvm::ArrayRef<llvm::Type*>::ArrayRef(llvmArgs), false);
+        llvm::Function* llvmFn = llvm::Function::Create(
+            llvmfnTy, llvm::GlobalValue::LinkageTypes::ExternalLinkage, fn_id->m_tok.m_strval, mod.get());
+        function* fn = new function(argTypes, retType, llvmFn);
+        activeFn = fn;
+        auto bb = llvm::BasicBlock::Create(context, "entry", llvmFn);
         builder.SetInsertPoint(bb);
+        valueStack.push_back(NamedValues);
+        for(size_t i = 0; i < argNames.size(); i++) {
+            auto name = argNames.at(i);
+
+            NamedValues.insert(std::make_pair(name,
+                value(builder.CreateAlloca(argTypes.at(i)->getLlvmType(), nullptr, name), name, argTypes.at(i))));
+            builder.CreateStore(llvmFn->args().begin() + i, NamedValues.at(name).m_value);
+        }
+
+        codeGen(fn_body);
+        NamedValues = valueStack.at(valueStack.size() - 1);
+        valueStack.pop_back();
+
+        return voidExpr;
+    }
+
+    void generator::generate(std::shared_ptr<exprtree> tree) {
         for each (auto sub in tree->subtrees) {
             codeGen(sub);
         }
 
-        builder.CreateRet(builder.CreateLoad(NamedValues.at("i").m_value));
         llvm::errs() << "\n";
         llvm::verifyModule(*mod.get(), &llvm::errs());
 
@@ -303,18 +367,19 @@ namespace codegen {
     void generator::generatePrimitives() {
         types.insert(std::make_pair("i8", std::make_shared<codetype>(codetype(undef_sign_8b_t, "i8", defType::primSInt))));
         types.insert(std::make_pair("u8", std::make_shared<codetype>(codetype(undef_sign_8b_t, "u8", defType::primUInt))));
-        types.insert(std::make_pair("i16", std::make_shared<codetype>(codetype(undef_sign_8b_t, "i16", defType::primSInt))));
-        types.insert(std::make_pair("u16", std::make_shared<codetype>(codetype(undef_sign_8b_t, "u16", defType::primUInt))));
-        types.insert(std::make_pair("i32", std::make_shared<codetype>(codetype(undef_sign_8b_t, "i32", defType::primSInt))));
-        types.insert(std::make_pair("u32", std::make_shared<codetype>(codetype(undef_sign_8b_t, "u32", defType::primUInt))));
-        types.insert(std::make_pair("i64", std::make_shared<codetype>(codetype(undef_sign_8b_t, "i64", defType::primSInt))));
-        types.insert(std::make_pair("u64", std::make_shared<codetype>(codetype(undef_sign_8b_t, "u64", defType::primUInt))));
+        types.insert(std::make_pair("i16", std::make_shared<codetype>(codetype(undef_sign_16b_t, "i16", defType::primSInt))));
+        types.insert(std::make_pair("u16", std::make_shared<codetype>(codetype(undef_sign_16b_t, "u16", defType::primUInt))));
+        types.insert(std::make_pair("i32", std::make_shared<codetype>(codetype(undef_sign_32b_t, "i32", defType::primSInt))));
+        types.insert(std::make_pair("u32", std::make_shared<codetype>(codetype(undef_sign_32b_t, "u32", defType::primUInt))));
+        types.insert(std::make_pair("i64", std::make_shared<codetype>(codetype(undef_sign_64b_t, "i64", defType::primSInt))));
+        types.insert(std::make_pair("u64", std::make_shared<codetype>(codetype(undef_sign_64b_t, "u64", defType::primUInt))));
         types.insert(std::make_pair("bool", std::make_shared<codetype>(codetype(bool_t, "bool", defType::primBool))));
+        types.insert(std::make_pair("void", std::make_shared<codetype>(
+            codetype(llvm::Type::getVoidTy(context), "void", defType::primSpec))));
     }
 
     generator::generator() : NamedValues(), types(), valueStack() {
         mod = llvm::make_unique<llvm::Module>("yacppccpp", context);
-        llvmmain = llvm::Function::Create(llvm::FunctionType::get(undef_sign_32b_t, false), llvm::Function::ExternalLinkage, "main", mod.get());
         generatePrimitives();
     }
 }

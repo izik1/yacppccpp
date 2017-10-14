@@ -30,7 +30,7 @@ std::unordered_map<type, std::string> typeStringMap{
     {type::keyword_fn,         "fn"},
     {type::keyword_while,      "while"},
     {type::keyword_until,      "until"},
-    {type::fn_header,          "fn_header"},
+    {type::fn_args,            "fn_args"},
     {type::colon,              "colon"},
     {type::comma,              "comma"},
     {type::semicolon,          "semicolon"},

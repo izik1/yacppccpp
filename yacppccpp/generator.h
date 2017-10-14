@@ -22,7 +22,6 @@ namespace codegen {
         std::vector<valuemap_t> valueStack;
         std::unordered_map<std::string, std::shared_ptr<codetype>> types;
         void generatePrimitives();
-        llvm::Function* llvmmain;
         std::unique_ptr<llvm::Module> mod;
         exprVal codeGen(std::shared_ptr<exprtree> tree);
         exprVal asCodeGen(std::shared_ptr<exprtree> &expr);
@@ -32,6 +31,7 @@ namespace codegen {
         exprVal unaryExprCodeGen(std::shared_ptr<exprtree> expr);
         exprVal letCodeGen(std::shared_ptr<exprtree> expr);
         exprVal ifCodeGen(std::shared_ptr<exprtree> tree);
+        exprVal fnCodeGen(std::shared_ptr<exprtree> tree);
         exprVal assignCodeGen(std::shared_ptr<exprtree> expr, const type t);
     };
 }

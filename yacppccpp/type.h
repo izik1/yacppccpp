@@ -12,7 +12,7 @@ enum class type {
     eof,
     carrot,
     comma,
-    fn_header,
+    fn_args,
     paren_open,
     paren_close,
     greater_than,

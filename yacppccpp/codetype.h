@@ -17,6 +17,7 @@ enum class defType {
     primUInt,
     primFP,
     primBool,
+    primSpec,
 };
 
 class codetype {

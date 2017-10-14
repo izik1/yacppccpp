@@ -16,19 +16,23 @@
 #include <string>
 #include "generator.h"
 constexpr auto str = "\
-let i32: i = 0;          \n\
-let i32: j = 15;         \n\
-while(j != 0){           \n\
-    let i8: k = 2 as i8; \n\
-    until(k == 0 as i8){ \n\
-        k -= 1 as i8;    \n\
-        i += 1;          \n\
-        if(i / 2 == 10){ \n\
-            i *= 5;      \n\
-        }                \n\
-    }                    \n\
-                         \n\
-    j -= 1;              \n\
+fn i32 main(){               \n\
+    let i32: i = 0;          \n\
+    let i32: j = 15;         \n\
+    while(j != 0){           \n\
+        let i8: k = 2 as i8; \n\
+        until(k == 0 as i8){ \n\
+            k -= 1 as i8;    \n\
+            i += 1;          \n\
+            if(i / 2 == 10){ \n\
+                i *= 5;      \n\
+            }                \n\
+        }                    \n\
+                             \n\
+        j -= 1;              \n\
+    }                        \n\
+                             \n\
+    return i;                \n\
 }";
 
 void printToken(token tok, size_t indent) {
@@ -54,7 +58,7 @@ int main() {
         //std::cerr << std::endl;
         auto tree = parser::parse(toks.begin());
 
-        //printTree(tree, 0);
+        printTree(tree, 0);
         codegen::generator().generate(tree);
     }
     catch(const std::exception& ex) {
