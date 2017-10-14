@@ -164,6 +164,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="codetype.h" />
+    <ClInclude Include="compilation_exception.h" />
     <ClInclude Include="exprtree.h" />
     <ClInclude Include="fndef.h" />
     <ClInclude Include="function.h" />
@@ -175,10 +176,12 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="token.h" />
     <ClInclude Include="type.h" />
+    <ClInclude Include="unexpected_token_exception.h" />
     <ClInclude Include="value.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="codetype.cpp" />
+    <ClCompile Include="compilation_exception.cpp" />
     <ClCompile Include="exprtree.cpp" />
     <ClCompile Include="fndef.cpp" />
     <ClCompile Include="function.cpp" />
@@ -193,6 +196,7 @@
     </ClCompile>
     <ClCompile Include="token.cpp" />
     <ClCompile Include="type.cpp" />
+    <ClCompile Include="unexpected_token_exception.cpp" />
     <ClCompile Include="value.cpp" />
     <ClCompile Include="yacppccpp.cpp" />
   </ItemGroup>

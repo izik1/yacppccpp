@@ -69,6 +69,12 @@
     <ClInclude Include="value.h">
       <Filter>Header Files\generation</Filter>
     </ClInclude>
+    <ClInclude Include="compilation_exception.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="unexpected_token_exception.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -106,6 +112,12 @@
     </ClCompile>
     <ClCompile Include="parser.cpp">
       <Filter>Source Files\parsing</Filter>
+    </ClCompile>
+    <ClCompile Include="compilation_exception.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="unexpected_token_exception.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

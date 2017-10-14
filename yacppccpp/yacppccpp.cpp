@@ -15,6 +15,7 @@
 #include <memory>
 #include <string>
 #include "generator.h"
+#include "unexpected_token_exception.h"
 constexpr auto str = "\
 fn i32 main(){               \n\
     let i32: i = 0;          \n\
@@ -60,6 +61,8 @@ int main() {
         throw;
         return 1;
     }
-
+    catch(const unexpected_token_exception& ex) {
+        std::cerr << ex.what(str) << std::endl;
+    }
     return 0;
 }
