@@ -20,7 +20,7 @@ namespace codegen {
     private:
         typedef std::unordered_map<std::string, codegen::value> valuemap_t;
         valuemap_t NamedValues;
-        std::unordered_map<std::string, function*> functions;
+        std::unordered_map<std::string, std::shared_ptr<function>> functions;
         std::vector<fndef> functionCreationStack;
         std::vector<valuemap_t> valueStack;
         std::unordered_map<std::string, std::shared_ptr<codetype>> types;
