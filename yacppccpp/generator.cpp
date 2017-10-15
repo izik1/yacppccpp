@@ -214,6 +214,7 @@ namespace codegen {
 
         builder.SetInsertPoint(loopbody);
         codeGen(expr->subtrees.at(1));
+
         if(currentBlockContainsReturn) currentBlockContainsReturn = false;
         else builder.CreateBr(loophead);
 
@@ -314,6 +315,7 @@ namespace codegen {
 
         auto id = expr->subtrees.at(1)->m_tok.m_strval;
         auto alloc = builder.CreateAlloca(types.at(typeName)->getLlvmType(), nullptr, id);
+        assert(NamedValues.find(id) == NamedValues.end() && "attempt to redefine an already defined variable");
         NamedValues.insert(std::make_pair(id, codegen::value(alloc, id, types.at(typeName))));
         if(expr->subtrees.size() == 3) codeGen(expr->subtrees.at(2));
 
@@ -329,10 +331,13 @@ namespace codegen {
 
         builder.SetInsertPoint(br_true);
         codeGen(tree->subtrees.at(1));
+
         if(currentBlockContainsReturn) currentBlockContainsReturn = false;
         else builder.CreateBr(br_end);
+
         builder.SetInsertPoint(br_false);
         if(tree->subtrees.size() == 3) codeGen(tree->subtrees.at(2));
+
         if(currentBlockContainsReturn) currentBlockContainsReturn = false;
         else builder.CreateBr(br_end);
 
@@ -411,7 +416,7 @@ namespace codegen {
         llvm::errs() << "\n";
         llvm::verifyModule(*mod.get(), &llvm::errs());
 
-        mod->print(llvm::errs(), nullptr);
+        mod->print(llvm::outs(), nullptr);
     }
 
     std::pair<std::string, std::shared_ptr<codetype>> generatePrim(std::string name, defType deftype, llvm::Type* llvmType) {

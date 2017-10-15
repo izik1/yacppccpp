@@ -1,0 +1,23 @@
+; ModuleID = 'yacppccpp'
+source_filename = "yacppccpp"
+
+define void @main() {
+entry:
+  %_i64 = alloca i64
+  store i64 0, i64* %_i64
+  %_u64 = alloca i64
+  store i64 0, i64* %_u64
+  %_i32 = alloca i32
+  store i32 0, i32* %_i32
+  %_u32 = alloca i32
+  store i32 0, i32* %_u32
+  %_i16 = alloca i16
+  store i16 0, i16* %_i16
+  %_u16 = alloca i16
+  store i16 0, i16* %_u16
+  %_i8 = alloca i8
+  store i8 0, i8* %_i8
+  %_u8 = alloca i8
+  store i8 0, i8* %_u8
+  ret void
+}

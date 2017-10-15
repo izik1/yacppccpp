@@ -10,36 +10,19 @@
 #include "parser.h"
 #include "exprtree.h"
 #include <algorithm>
+#include <fstream>
+#include <sstream>
 #include <cassert>
 #include <cstdio>
 #include <memory>
 #include <string>
 #include "generator.h"
 #include "unexpected_token_exception.h"
-constexpr auto str = "\
-fn i32 main(){               \n\
-    let i32: i = 0;          \n\
-    let i32: j = 15;         \n\
-    while(j != 0){           \n\
-        let i8: k = 2 as i8; \n\
-        until(k == 0 as i8){ \n\
-            k -= 1 as i8;    \n\
-            i += 1;          \n\
-            if(i / 2 == 10){ \n\
-                i *= 5;      \n\
-            }                \n\
-        }                    \n\
-                             \n\
-        j -= 1;              \n\
-    }                        \n\
-                             \n\
-    tst(i);                  \n\
-    return i;                \n\
-} fn tst(i32 a){}";
 
 void printToken(token tok, size_t indent) {
-    std::cerr << std::string(indent, ' ') << typeStringMap.at(tok.m_type) << ", " <<
-        std::to_string(tok.m_startPos) << ", " << std::to_string(tok.m_len) << ", " << tok.m_strval << std::endl;
+
+    //std::cerr << std::string(indent, ' ') << typeStringMap.at(tok.m_type) << ", " <<
+    //    std::to_string(tok.m_startPos) << ", " << std::to_string(tok.m_len) << ", " << tok.m_strval << std::endl;
 }
 
 void printTree(std::shared_ptr<exprtree> tree, size_t depth) {
@@ -48,7 +31,24 @@ void printTree(std::shared_ptr<exprtree> tree, size_t depth) {
     for each (auto subtree in tree->subtrees) printTree(subtree, depth + 1);
 }
 
-int main() {
+// "Borrowed" from https://stackoverflow.com/a/116220/6221420
+std::string slurp(std::ifstream& in) {
+    std::stringstream sstr;
+    sstr << in.rdbuf();
+    return sstr.str();
+}
+
+int main(int argc, char* argv[]) {
+    std::string str;
+    if(argc != 2) {
+        std::cerr << "Invalid arg count" << std::endl;
+        return 1;
+    } else {
+        std::ifstream fin(argv[1]);
+        str = slurp(fin);
+        fin.close();
+    }
+
     try {
         auto toks = lexer::lex(str);
         auto tree = parser::parse(toks.begin());

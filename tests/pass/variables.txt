@@ -1,0 +1,10 @@
+fn main() {
+    let i64: _i64 = 0 as i64;
+    let u64: _u64 = 0 as u64;
+    let i32: _i32 = 0;
+    let u32: _u32 = 0 as u32;
+    let i16: _i16 = 0 as i16;
+    let u16: _u16 = 0 as u16;
+    let i8: _i8 = 0 as i8;
+    let u8: _u8 = 0 as u8;
+}
