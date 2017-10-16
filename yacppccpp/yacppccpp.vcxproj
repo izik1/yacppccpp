@@ -237,7 +237,7 @@
   <ItemGroup>
     <ClInclude Include="codetype.h" />
     <ClInclude Include="compilation_exception.h" />
-    <ClInclude Include="exprtree.h" />
+    <ClInclude Include="ast.h" />
     <ClInclude Include="fndef.h" />
     <ClInclude Include="function.h" />
     <ClInclude Include="generator.h" />
@@ -255,7 +255,7 @@
   <ItemGroup>
     <ClCompile Include="codetype.cpp" />
     <ClCompile Include="compilation_exception.cpp" />
-    <ClCompile Include="exprtree.cpp" />
+    <ClCompile Include="ast.cpp" />
     <ClCompile Include="fndef.cpp" />
     <ClCompile Include="function.cpp" />
     <ClCompile Include="generator.cpp" />

@@ -45,7 +45,7 @@ namespace codegen {
 
     llvm::IRBuilder<> builder(context);
 
-    exprVal generator::codeGen(std::shared_ptr<exprtree> tree) {
+    exprVal generator::codeGen(std::shared_ptr<ast> tree) {
         if(currentBlockContainsReturn) return voidExpr; // all the code past here is dead.
 
         if(isBinaryOp(tree->m_tok.m_type) && tree->subtrees.size() == 2) return binExprCodeGen(tree);
@@ -91,7 +91,7 @@ namespace codegen {
         }
     }
 
-    exprVal generator::generateCall(std::shared_ptr<exprtree> tree) {
+    exprVal generator::generateCall(std::shared_ptr<ast> tree) {
         auto args = std::vector<llvm::Value*>();
 
         if(functions.find(tree->subtrees.at(0)->m_tok.m_strval) == functions.end()) throw std::logic_error("non-existant function");
@@ -113,7 +113,7 @@ namespace codegen {
         return {fn->retType, builder.CreateCall(fn->m_function, args, fn->retType == types.at("void") ? "" : "calltmp")};
     }
 
-    void generator::generateReturn(std::shared_ptr<exprtree> tree) {
+    void generator::generateReturn(std::shared_ptr<ast> tree) {
         if(currentlyParsingFunction->retType == types.at("void")) {
             assert(tree->subtrees.size() == 0 && "returns in a void function must be empty");
             builder.CreateRetVoid();
@@ -130,7 +130,7 @@ namespace codegen {
         builder.CreateRet(val);
     }
 
-    exprVal generator::unaryExprCodeGen(std::shared_ptr<exprtree> expr) {
+    exprVal generator::unaryExprCodeGen(std::shared_ptr<ast> expr) {
         if(expr->m_tok.m_type == type::plus) throw std::logic_error("unary plus is invalid");
 
         std::shared_ptr<codetype> type;
@@ -168,7 +168,7 @@ namespace codegen {
         }
     }
 
-    exprVal generator::asCodeGen(std::shared_ptr<exprtree> &expr) {
+    exprVal generator::asCodeGen(std::shared_ptr<ast> &expr) {
         assert(expr->subtrees.at(1)->m_tok.m_type == type::identifier);
 
         std::shared_ptr<codetype> lhs_type;
@@ -200,7 +200,7 @@ namespace codegen {
         }
     }
 
-    exprVal generator::whileUntilCodeGen(std::shared_ptr<exprtree> expr) {
+    exprVal generator::whileUntilCodeGen(std::shared_ptr<ast> expr) {
         auto loophead = llvm::BasicBlock::Create(context, "loop_head", currentlyParsingFunction->m_function);
         auto loopbody = llvm::BasicBlock::Create(context, "loop_body", currentlyParsingFunction->m_function);
         auto looptail = llvm::BasicBlock::Create(context, "loop_tail", currentlyParsingFunction->m_function);
@@ -222,7 +222,7 @@ namespace codegen {
         return voidExpr;
     }
 
-    exprVal generator::binExprCodeGen(std::shared_ptr<exprtree> expr) {
+    exprVal generator::binExprCodeGen(std::shared_ptr<ast> expr) {
         switch(expr->m_tok.m_type) {
         case type::equals: return assignCodeGen(expr, type::equals);
         case type::plus_equals: return assignCodeGen(expr, type::plus);
@@ -285,7 +285,7 @@ namespace codegen {
         return {op->retType, builder.CreateCall(op->m_function, llvm::makeArrayRef({lhs_value, rhs_value}), "opcall")};
     }
 
-    exprVal generator::assignCodeGen(std::shared_ptr<exprtree> expr, const type t) {
+    exprVal generator::assignCodeGen(std::shared_ptr<ast> expr, const type t) {
         auto lhs = expr->subtrees.at(0)->m_tok;
 
         if(lhs.m_type != type::identifier) throw std::logic_error("expected identifier on lhs of assignment");
@@ -309,7 +309,7 @@ namespace codegen {
         return voidExpr;
     }
 
-    exprVal generator::letCodeGen(std::shared_ptr<exprtree> expr) {
+    exprVal generator::letCodeGen(std::shared_ptr<ast> expr) {
         auto typeName = expr->subtrees.at(0)->m_tok.m_strval;
         assert(types.find(typeName) != types.end() && "Undefined type"); // assert the type exists.
 
@@ -322,7 +322,7 @@ namespace codegen {
         return voidExpr;
     }
 
-    exprVal generator::ifCodeGen(std::shared_ptr<exprtree> tree) {
+    exprVal generator::ifCodeGen(std::shared_ptr<ast> tree) {
         auto br_true = llvm::BasicBlock::Create(context, "if_true", currentlyParsingFunction->m_function);
         auto br_false = llvm::BasicBlock::Create(context, "if_false", currentlyParsingFunction->m_function);
         auto br_end = llvm::BasicBlock::Create(context, "if_end", currentlyParsingFunction->m_function);
@@ -345,7 +345,7 @@ namespace codegen {
         return voidExpr;
     }
 
-    exprVal generator::fnCodeGen(std::shared_ptr<exprtree> tree) {
+    exprVal generator::fnCodeGen(std::shared_ptr<ast> tree) {
         auto fn_id = tree->subtrees.at(0);
         auto fn_args = tree->subtrees.at(1);
         auto fn_body = tree->subtrees.at(2);
@@ -409,7 +409,7 @@ namespace codegen {
         }
     }
 
-    void generator::generate(std::shared_ptr<exprtree> tree) {
+    void generator::generate(std::shared_ptr<ast> tree) {
         for each (auto sub in tree->subtrees) codeGen(sub);
 
         createFunctions();

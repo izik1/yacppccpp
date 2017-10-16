@@ -66,9 +66,6 @@
     <ClInclude Include="generator.h">
       <Filter>Header Files\generation</Filter>
     </ClInclude>
-    <ClInclude Include="exprtree.h">
-      <Filter>Header Files\parsing</Filter>
-    </ClInclude>
     <ClInclude Include="parser.h">
       <Filter>Header Files\parsing</Filter>
     </ClInclude>
@@ -82,7 +79,10 @@
       <Filter>Header Files\exceptions</Filter>
     </ClInclude>
     <ClInclude Include="invalid_primary_exception.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\exceptions</Filter>
+    </ClInclude>
+    <ClInclude Include="ast.h">
+      <Filter>Header Files\parsing</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -116,9 +116,6 @@
     <ClCompile Include="value.cpp">
       <Filter>Source Files\generation</Filter>
     </ClCompile>
-    <ClCompile Include="exprtree.cpp">
-      <Filter>Source Files\parsing</Filter>
-    </ClCompile>
     <ClCompile Include="parser.cpp">
       <Filter>Source Files\parsing</Filter>
     </ClCompile>
@@ -130,6 +127,9 @@
     </ClCompile>
     <ClCompile Include="invalid_primary_exception.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ast.cpp">
+      <Filter>Source Files\parsing</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

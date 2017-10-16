@@ -8,7 +8,7 @@
 #include <iostream>
 #include "token.h"
 #include "parser.h"
-#include "exprtree.h"
+#include "ast.h"
 #include <algorithm>
 #include <fstream>
 #include <sstream>
@@ -20,12 +20,11 @@
 #include "unexpected_token_exception.h"
 
 void printToken(token tok, size_t indent) {
-
-    //std::cerr << std::string(indent, ' ') << typeStringMap.at(tok.m_type) << ", " <<
-    //    std::to_string(tok.m_startPos) << ", " << std::to_string(tok.m_len) << ", " << tok.m_strval << std::endl;
+    std::cerr << std::string(indent, ' ') << typeStringMap.at(tok.m_type) << ", " <<
+        std::to_string(tok.m_startPos) << ", " << std::to_string(tok.m_len) << ", " << tok.m_strval << std::endl;
 }
 
-void printTree(std::shared_ptr<exprtree> tree, size_t depth) {
+void printTree(std::shared_ptr<ast> tree, size_t depth) {
     printToken(tree->m_tok, depth);
 
     for each (auto subtree in tree->subtrees) printTree(subtree, depth + 1);
