@@ -92,6 +92,8 @@ std::shared_ptr<ast> parser::parseUrnary(const token &tok) {
 std::shared_ptr<ast> parser::parsePrimary() {
     auto tok = advance();
     switch(tok.m_type) {
+    case type::keyword_true:
+    case type::keyword_false:
     case type::num: return std::make_shared<ast>(ast(tok));
 
     case type::paren_open:

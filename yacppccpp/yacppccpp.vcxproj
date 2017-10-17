@@ -250,7 +250,6 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="token.h" />
     <ClInclude Include="type.h" />
-    <ClInclude Include="type_validator.h" />
     <ClInclude Include="unexpected_token_exception.h" />
     <ClInclude Include="value.h" />
   </ItemGroup>
@@ -275,7 +274,6 @@
     </ClCompile>
     <ClCompile Include="token.cpp" />
     <ClCompile Include="type.cpp" />
-    <ClCompile Include="type_validator.cpp" />
     <ClCompile Include="unexpected_token_exception.cpp" />
     <ClCompile Include="value.cpp" />
     <ClCompile Include="yacppccpp.cpp" />

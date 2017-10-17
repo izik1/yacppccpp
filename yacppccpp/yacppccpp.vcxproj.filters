@@ -84,9 +84,6 @@
     <ClInclude Include="ast.h">
       <Filter>Header Files\parsing</Filter>
     </ClInclude>
-    <ClInclude Include="type_validator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="deftype.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -136,9 +133,6 @@
     </ClCompile>
     <ClCompile Include="ast.cpp">
       <Filter>Source Files\parsing</Filter>
-    </ClCompile>
-    <ClCompile Include="type_validator.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="deftype.cpp">
       <Filter>Source Files</Filter>

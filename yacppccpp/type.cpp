@@ -29,6 +29,8 @@ std::unordered_map<type, std::string> typeStringMap{
     {type::keyword_as,         "as"},
     {type::keyword_ret,        "ret"},
     {type::keyword_fn,         "fn"},
+    {type::keyword_true,       "true"},
+    {type::keyword_false,      "false"},
     {type::keyword_while,      "while"},
     {type::keyword_until,      "until"},
     {type::fn_args,            "fn_args"},
@@ -76,4 +78,6 @@ std::unordered_map<std::string, type> lexerKeywordMap{
     {"else", type::keyword_else},
     {"as", type::keyword_as},
     {"fn", type::keyword_fn},
+    {"true", type::keyword_true},
+    {"false",type::keyword_false},
 };

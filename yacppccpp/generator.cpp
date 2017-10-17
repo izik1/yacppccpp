@@ -60,6 +60,9 @@ namespace codegen {
 
         case type::num: return {types.at("i32"), builder.getInt32(tree->m_tok.m_value)};
 
+        case type::keyword_true: return {types.at("bool"), builder.getInt1(true)};
+        case type::keyword_false: return {types.at("bool"), builder.getInt1(false)};
+
         case type::identifier:
             if(NamedValues.find(tree->m_tok.m_strval) == NamedValues.end()) throw std::logic_error("undefined identifier");
             else return {NamedValues.at(tree->m_tok.m_strval).m_type, builder.CreateLoad(NamedValues.at(tree->m_tok.m_strval).m_value)};

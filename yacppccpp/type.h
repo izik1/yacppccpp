@@ -31,6 +31,8 @@ enum class type {
     tilda,
     not,
     call,
+    keyword_true,
+    keyword_false,
     _module, // special name because of keywords.
     keyword_if, // cpp has keywords too so I can't just type "if"
     keyword_let,
