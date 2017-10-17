@@ -228,8 +228,12 @@ std::shared_ptr<ast> parser::parseIf() {
 }
 
 bool parser::parseArgument(std::shared_ptr<ast> appendTree) {
-    appendTree->subtrees.push_back(parseIdentifier()); // type
-    appendTree->subtrees.push_back(parseIdentifier()); // identifier.
+    auto type = parseIdentifier()->m_tok.m_strval;
+    auto tree = parseIdentifier();
+
+    tree->setType(type);
+
+    appendTree->subtrees.push_back(tree); // identifier.
 
     return peek().m_type == type::comma;
 }

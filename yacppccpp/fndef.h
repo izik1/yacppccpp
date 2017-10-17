@@ -2,7 +2,9 @@
 #include "codetype.h"
 #include <vector>
 #include <string>
+#pragma warning(push, 0)
 #include "llvm/IR/Type.h"
+#pragma warning(pop)
 #include "function.h"
 #include "ast.h"
 class fndef {

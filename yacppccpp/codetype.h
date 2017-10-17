@@ -1,24 +1,18 @@
 #pragma once
+#pragma warning(push, 0)
 #include "llvm/IR/Type.h"
+#pragma warning(pop)
 #include <string>
 #include <memory>
 #include <utility>
 #include <unordered_map>
 #include <vector>
+#include "deftype.h"
 enum class type;
 class function;
 namespace llvm {
     class Function;
 }
-
-enum class defType {
-    user,
-    primSInt,
-    primUInt,
-    primFP,
-    primBool,
-    primSpec,
-};
 
 class codetype {
 public:

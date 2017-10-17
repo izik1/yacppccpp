@@ -2,7 +2,9 @@
 #include <tuple>
 #include <memory>
 #include "ast.h"
+#pragma warning(push, 0)
 #include "llvm/IR/Module.h"
+#pragma warning(pop)
 #include <unordered_map>
 #include "value.h"
 #include "fndef.h"

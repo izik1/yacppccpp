@@ -238,6 +238,7 @@
     <ClInclude Include="codetype.h" />
     <ClInclude Include="compilation_exception.h" />
     <ClInclude Include="ast.h" />
+    <ClInclude Include="deftype.h" />
     <ClInclude Include="fndef.h" />
     <ClInclude Include="function.h" />
     <ClInclude Include="generator.h" />
@@ -249,6 +250,7 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="token.h" />
     <ClInclude Include="type.h" />
+    <ClInclude Include="type_validator.h" />
     <ClInclude Include="unexpected_token_exception.h" />
     <ClInclude Include="value.h" />
   </ItemGroup>
@@ -256,6 +258,7 @@
     <ClCompile Include="codetype.cpp" />
     <ClCompile Include="compilation_exception.cpp" />
     <ClCompile Include="ast.cpp" />
+    <ClCompile Include="deftype.cpp" />
     <ClCompile Include="fndef.cpp" />
     <ClCompile Include="function.cpp" />
     <ClCompile Include="generator.cpp" />
@@ -272,6 +275,7 @@
     </ClCompile>
     <ClCompile Include="token.cpp" />
     <ClCompile Include="type.cpp" />
+    <ClCompile Include="type_validator.cpp" />
     <ClCompile Include="unexpected_token_exception.cpp" />
     <ClCompile Include="value.cpp" />
     <ClCompile Include="yacppccpp.cpp" />

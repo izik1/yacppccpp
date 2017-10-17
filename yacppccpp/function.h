@@ -1,6 +1,8 @@
 #pragma once
 #include "codetype.h"
+#pragma warning(push, 0)
 #include "llvm/IR/Function.h"
+#pragma warning(pop)
 #include <vector>
 class function {
 public:

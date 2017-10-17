@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "generator.h"
+#pragma warning(push, 0)
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/APInt.h"
 #include "llvm/ADT/STLExtras.h"
@@ -15,6 +16,7 @@
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/IR/Instructions.h"
+#pragma warning(pop)
 #include "function.h"
 #include <exception>
 #include <cassert>
@@ -350,8 +352,6 @@ namespace codegen {
         auto fn_args = tree->subtrees.at(1);
         auto fn_body = tree->subtrees.at(2);
 
-        assert(fn_args->subtrees.size() % 2 == 0);
-
         // Does this function explicitly delcare its return type?
         auto retType = tree->subtrees.size() == 4 ? types.at(tree->subtrees.at(3)->m_tok.m_strval) : types.at("void");
 
@@ -359,11 +359,14 @@ namespace codegen {
         auto argNames = std::vector<std::string>();
         auto llvmArgs = std::vector<llvm::Type*>();
 
-        for(size_t i = 0; i < fn_args->subtrees.size() / 2; i++) {
-            auto ty = types.at(fn_args->subtrees.at(i * 2)->m_tok.m_strval);
+        for each (auto arg in fn_args->subtrees) {
+            auto ty = types.at(arg->getType());
             argTypes.push_back(ty);
-            argNames.push_back(fn_args->subtrees.at(i * 2 + 1)->m_tok.m_strval);
+            argNames.push_back(arg->m_tok.m_strval);
             llvmArgs.push_back(ty->getLlvmType());
+        }
+        for(size_t i = 0; i < fn_args->subtrees.size(); i++) {
+            auto arg = fn_args->subtrees.at(i);
         }
 
         auto llvmfnTy = llvm::FunctionType::get(retType->getLlvmType(), llvm::ArrayRef<llvm::Type*>::ArrayRef(llvmArgs), false);
