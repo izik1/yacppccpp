@@ -42,6 +42,8 @@ enum class type {
     keyword_while,
     keyword_until,
     keyword_ret,
+    keyword_do,
+    keyword_dowhile,
 };
 
 extern std::unordered_map<type, std::string> typeStringMap;

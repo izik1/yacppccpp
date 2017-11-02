@@ -32,10 +32,13 @@ namespace codegen {
         exprVal generateCall(std::shared_ptr<ast> tree);
         void generateReturn(std::shared_ptr<ast> tree);
         exprVal asCodeGen(std::shared_ptr<ast> &expr);
+        exprVal doCodeGen(std::shared_ptr<ast> expr);
+        exprVal dowhileCodeGen(std::shared_ptr<ast> expr);
         exprVal whileUntilCodeGen(std::shared_ptr<ast> expr);
         exprVal binExprCodeGen(std::shared_ptr<ast> expr);
         exprVal binExprCodeGen(exprVal lhs, exprVal rhs, const type t);
         exprVal unaryExprCodeGen(std::shared_ptr<ast> expr);
+        exprVal unaryExprCodeGen(exprVal expr, const type t);
         exprVal letCodeGen(std::shared_ptr<ast> expr);
         exprVal ifCodeGen(std::shared_ptr<ast> tree);
         exprVal fnCodeGen(std::shared_ptr<ast> tree);

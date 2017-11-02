@@ -31,7 +31,7 @@
     <ProjectGuid>{BC0C4A7F-3291-42CD-A9A4-6C575C29F084}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>yacppcc</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.10240.0</WindowsTargetPlatformVersion>
     <ProjectName>yacppccpp</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

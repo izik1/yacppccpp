@@ -60,8 +60,8 @@ namespace codegen {
 
         case type::num: return {types.at("i32"), builder.getInt32(tree->m_tok.m_value)};
 
-        case type::keyword_true: return {types.at("bool"), builder.getInt1(true)};
-        case type::keyword_false: return {types.at("bool"), builder.getInt1(false)};
+        case type::keyword_true: return {types.at("bool"), builder.getTrue()};
+        case type::keyword_false: return {types.at("bool"), builder.getFalse()};
 
         case type::identifier:
             if(NamedValues.find(tree->m_tok.m_strval) == NamedValues.end()) throw std::logic_error("undefined identifier");
@@ -80,6 +80,8 @@ namespace codegen {
             fnCodeGen(tree);
             return voidExpr;
 
+        case type::keyword_do: return doCodeGen(tree);
+        case type::keyword_dowhile: return dowhileCodeGen(tree);
         case type::keyword_while:
         case type::keyword_until:
             return whileUntilCodeGen(tree);
@@ -136,35 +138,39 @@ namespace codegen {
     }
 
     exprVal generator::unaryExprCodeGen(std::shared_ptr<ast> expr) {
-        if(expr->m_tok.m_type == type::plus) throw std::logic_error("unary plus is invalid");
+        return unaryExprCodeGen(codeGen(expr->subtrees.at(0)), expr->m_tok.m_type);
+    }
 
+    exprVal generator::unaryExprCodeGen(exprVal expr, const type t) {
+        if(t == type::plus) throw std::logic_error("unary plus is invalid");
         std::shared_ptr<codetype> type;
         llvm::Value* val;
-        std::tie(type, val) = codeGen(expr->subtrees.at(0));
+        std::tie(type, val) = expr;
 
         switch(type->m_defType) {
         case defType::primSInt:
-            switch(expr->m_tok.m_type) {
+            switch(t) {
             case type::minus: return {type, builder.CreateNeg(val, "negtmp")}; // negate
             case type::tilda: return {type, builder.CreateNot(val, "nottmp")}; // bitwise NOT.
             default: throw std::logic_error("unimplemented unary op for primitive signed types");
             }
 
         case defType::primUInt:
-            switch(expr->m_tok.m_type) {
+            switch(t) {
             case type::tilda: return {type, builder.CreateNot(val, "nottmp")}; // bitwise NOT.
+            case type::plus_equals:
             default: throw std::logic_error("unimplemented unary op for primitive unsigned types");
             }
 
         case defType::primBool:
-            switch(expr->m_tok.m_type) {
+            switch(t) {
             case type::not: return {type, builder.CreateNot(val, "nottmp")}; // bitwise NOT.
             default: throw std::logic_error("unimplemented unary op for primitive unsigned types");
             }
 
         case defType::user:
         {
-            auto fn = type->lookupOp(expr->m_tok.m_type, {type});
+            auto fn = type->lookupOp(t, {type});
             if(!fn) throw std::logic_error("unimplemented unary op for type");
             return {fn->retType, builder.CreateCall(fn->m_function, val, "unary call")};
         }
@@ -203,6 +209,59 @@ namespace codegen {
 
         default: throw std::logic_error("unexpected type-definition enum value in cast");
         }
+    }
+
+    llvm::Value* getConstNum(std::shared_ptr<codetype> type, uint64_t val) {
+        if(!type->isNumeric() || type->m_defType == defType::primFP)
+            throw std::logic_error("getConstZero::this should only be called on integer primitives");
+        if(type->m_name == "i64" || type->m_name == "u64") return builder.getInt64(val);
+        if(type->m_name == "i32" || type->m_name == "u32") return builder.getInt32(val);
+        if(type->m_name == "i16" || type->m_name == "u16") return builder.getInt16(val);
+        if(type->m_name == "i8" || type->m_name == "u8") return builder.getInt8(val);
+        throw std::logic_error("getConstZero::unexpected primitive numeric type");
+    }
+    exprVal generator::dowhileCodeGen(std::shared_ptr<ast> expr) {
+        throw std::logic_error("Unimplemented function::dowhileCodeGen");
+    }
+
+    exprVal generator::doCodeGen(std::shared_ptr<ast> expr) {
+        auto loophead = llvm::BasicBlock::Create(context, "do_head", currentlyParsingFunction->m_function);
+        auto loopbody = llvm::BasicBlock::Create(context, "do_body", currentlyParsingFunction->m_function);
+        auto looptail = llvm::BasicBlock::Create(context, "do_tail", currentlyParsingFunction->m_function);
+
+        std::shared_ptr<codetype> condExpr_type;
+        llvm::Value* condExpr_value;
+        std::tie(condExpr_type, condExpr_value) = codeGen(expr->subtrees.at(0));
+
+        if(condExpr_type == voidtype) throw std::logic_error("Unexpected void expression in do loop header");
+        if(!condExpr_type->isNumeric() || condExpr_type->m_defType == defType::primFP)
+            throw std::logic_error("Expected primitive integer type for do loop header");
+
+        auto alloc = builder.CreateAlloca(condExpr_type->getLlvmType(), nullptr, "do@@" + condExpr_type->m_name);
+
+        builder.CreateStore(getConstNum(condExpr_type, 0), alloc);
+        builder.CreateBr(loophead);
+
+        builder.SetInsertPoint(loophead);
+        builder.CreateCondBr(
+            unwrap(binExprCodeGen({condExpr_type,builder.CreateLoad(alloc)}, {condExpr_type,condExpr_value}, type::less_than)),
+            loopbody,
+            looptail);
+
+        builder.SetInsertPoint(loopbody);
+
+        builder.CreateStore(unwrap(binExprCodeGen(
+        {condExpr_type,builder.CreateLoad(alloc)},
+        {condExpr_type,getConstNum(condExpr_type,1)},
+            type::plus)),
+            alloc);
+
+        codeGen(expr->subtrees.at(1));
+        builder.CreateBr(loophead);
+
+        builder.SetInsertPoint(looptail);
+
+        return voidExpr;
     }
 
     exprVal generator::whileUntilCodeGen(std::shared_ptr<ast> expr) {
@@ -258,6 +317,8 @@ namespace codegen {
                 case type::not_equals: return {types.at("bool"), builder.CreateICmpNE(lhs_value, rhs_value, "netmp")};
                 case type::plus: return {lhs_type, builder.CreateNSWAdd(lhs_value, rhs_value, "addtmp")};
                 case type::minus: return {lhs_type, builder.CreateNSWSub(lhs_value, rhs_value, "subtmp")};
+                case type::less_than: return {types.at("bool"), builder.CreateICmpSLT(lhs_value, rhs_value, "slttmp")};
+                case type::greater_than: return {types.at("bool"), builder.CreateICmpSGT(lhs_value, rhs_value, "sgttmp")};
                 case type::astrisk: return {lhs_type, builder.CreateNSWMul(lhs_value, rhs_value, "multmp")};
                 case type::slash: return {lhs_type, builder.CreateSDiv(lhs_value, rhs_value, "divtmp")};
                 case type::carrot: return {lhs_type, builder.CreateXor(lhs_value, rhs_value, "xortmp")};
@@ -267,6 +328,8 @@ namespace codegen {
                 switch(t) {
                 case type::equals_equals: return {types.at("bool"), builder.CreateICmpEQ(lhs_value, rhs_value, "eqtmp")};
                 case type::not_equals: return {types.at("bool"), builder.CreateICmpNE(lhs_value, rhs_value, "netmp")};
+                case type::less_than: return {types.at("bool"), builder.CreateICmpULT(lhs_value, rhs_value, "ulttmp")};
+                case type::greater_than: return {types.at("bool"), builder.CreateICmpUGT(lhs_value, rhs_value, "ugttmp")};
                 case type::plus: return {lhs_type, builder.CreateNUWAdd(lhs_value, rhs_value, "addtmp")};
                 case type::minus: return {lhs_type, builder.CreateNUWSub(lhs_value, rhs_value, "subtmp")};
                 case type::astrisk: return {lhs_type, builder.CreateNUWMul(lhs_value, rhs_value, "multmp")};

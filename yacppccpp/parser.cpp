@@ -169,7 +169,7 @@ std::shared_ptr<ast> parser::parseStatement() {
     switch(peek().m_type) {
     case type::semicolon: return std::make_shared<ast>(ast(advance()));
     case type::keyword_let: return parseVariable();
-
+    case type::keyword_do: return parseDo();
     case type::keyword_while:
     case type::keyword_until:
     {
@@ -226,6 +226,24 @@ std::shared_ptr<ast> parser::parseIf() {
         tree->m_tok.m_len = token::getCombindedLen(tree->m_tok, brElse->m_tok);
     } else tree->m_tok.m_len = (brTrue->m_tok.m_startPos - tree->m_tok.m_startPos) + brTrue->m_tok.m_len;
 
+    return tree;
+}
+
+std::shared_ptr<ast> parser::parseDo() {
+    auto tree = std::make_shared<ast>(ast(advance()));
+    if(peek().m_type == type::paren_open) {
+        advance();
+        tree->subtrees.push_back(parseExpression(parsePrimary(), 0));
+        advance().expect(type::paren_close);
+    } else tree->m_tok.m_type = type::keyword_dowhile;
+    auto block = parseStatement();
+    if(tree->m_tok.m_type == type::keyword_dowhile) {
+        advance().expect(type::keyword_while);
+        tree->subtrees.push_back(parseExpression(parsePrimary(), 0));
+        advance().expect(type::semicolon);
+    }
+
+    tree->subtrees.push_back(block);
     return tree;
 }
 

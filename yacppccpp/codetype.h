@@ -19,6 +19,7 @@ public:
     const std::string m_name;
     const defType m_defType;
     bool isPrimitive();
+    bool isNumeric();
     llvm::Type* getLlvmType() const;
     std::unordered_map<std::shared_ptr<codetype>, llvm::Function*> casts;
     std::vector<std::tuple<type, function*>> ops;

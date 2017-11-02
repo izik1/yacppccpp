@@ -6,6 +6,10 @@ bool codetype::isPrimitive() {
     return m_defType != defType::user;
 }
 
+bool codetype::isNumeric() {
+    return isPrimitive() && (m_defType == defType::primFP || m_defType == defType::primSInt || m_defType == defType::primUInt);
+}
+
 llvm::Type* codetype::getLlvmType() const {
     return m_llvmType;
 }

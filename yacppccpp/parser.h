@@ -18,6 +18,7 @@ private:
     std::shared_ptr<ast> parseFunction();
     std::shared_ptr<ast> parseStatement();
     std::shared_ptr<ast> parseIf();
+    std::shared_ptr<ast> parseDo();
     std::shared_ptr<ast> parseIdentifier();
     std::shared_ptr<ast> parseBlock();
     bool parseArgument(std::shared_ptr<ast> appendTree);
