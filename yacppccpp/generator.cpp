@@ -379,6 +379,14 @@ namespace codegen {
 
     exprVal generator::letCodeGen(std::shared_ptr<ast> expr) {
         auto typeName = expr->subtrees.at(0)->m_tok.m_strval;
+        if(types.find(typeName) == types.end()) {
+            throw std::logic_error("Invalid type in let");
+        }
+
+        if(typeName == "void") {
+            throw std::logic_error("Can't delcare variable as void!");
+        }
+
         assert(types.find(typeName) != types.end() && "Undefined type"); // assert the type exists.
 
         auto id = expr->subtrees.at(1)->m_tok.m_strval;
